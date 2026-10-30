@@ -307,6 +307,16 @@ def run_gitleaks(root: str, work: str) -> ScannerOutcome:
 # --------------------------------------------------------------------------- common
 
 
+def _json_errors(out_file: str) -> str:
+    """Error messages a scanner wrote into its JSON report (semgrep reports fatal errors there under --quiet)."""
+    try:
+        with open(out_file, "r", encoding="utf-8") as fh:
+            errors = json.load(fh).get("errors") or []
+    except (OSError, ValueError, AttributeError):
+        return ""
+    return "; ".join(str(e.get("message") or e.get("type") or e) if isinstance(e, dict) else str(e) for e in errors)
+
+
 def _finish(name, binary, version_args, argv, res, out_file, parser: Callable, ok_codes) -> ScannerOutcome:
     outcome = ScannerOutcome(
         name=name,
@@ -322,7 +332,7 @@ def _finish(name, binary, version_args, argv, res, out_file, parser: Callable, o
         return outcome
     if res.exit_code not in ok_codes or not os.path.exists(out_file):
         outcome.status = "failed"
-        outcome.error = f"{name} exited with code {res.exit_code}: {res.stderr.strip()[-500:]}"
+        outcome.error = f"{name} exited with code {res.exit_code}: {(res.stderr.strip() or _json_errors(out_file))[-500:]}"
         return outcome
     try:
         with open(out_file, "r", encoding="utf-8") as fh:
