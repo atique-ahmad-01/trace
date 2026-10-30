@@ -4,9 +4,10 @@ Safe subprocess execution for scanners and git.
 - argv lists only (never a shell), no interpolation of untrusted strings into a shell
 - minimal environment (application secrets are never inherited)
 - wall-clock timeout with process-group kill
-- CPU-time / file-size / open-file limits via setrlimit (POSIX)
+- CPU-time / file-size / open-file / data-memory limits via setrlimit (POSIX)
 """
 
+import functools
 import os
 import resource
 import shutil
@@ -41,7 +42,7 @@ def resolve_tool(name_or_path: str) -> Optional[str]:
     return shutil.which(name_or_path)
 
 
-def _limits():
+def _limits(limit_memory: bool = True):
     os.setsid()
     cpu = settings.SCANNER_TIMEOUT + 60
     for res, val in (
@@ -56,9 +57,13 @@ def _limits():
             resource.setrlimit(res, (new, hard))
         except (ValueError, OSError):
             pass
-    try:  # Not enforced on macOS; effective on Linux.
+    if not limit_memory:
+        return
+    # RLIMIT_DATA, not RLIMIT_AS: Go runtimes (wazero in gitleaks) reserve far more address space than
+    # they use and crash at startup under an address-space cap. Not enforced on macOS.
+    try:
         mem = settings.SCANNER_MEMORY_LIMIT_MB * 1024 * 1024
-        resource.setrlimit(resource.RLIMIT_AS, (mem, mem))
+        resource.setrlimit(resource.RLIMIT_DATA, (mem, mem))
     except (ValueError, OSError):
         pass
 
@@ -70,7 +75,10 @@ def run(
     timeout: Optional[int] = None,
     extra_env: Optional[Dict[str, str]] = None,
     max_output: int = 50 * 1024 * 1024,
+    limit_memory: bool = True,
 ) -> ProcResult:
+    """`limit_memory=False` is for tools that enforce SCANNER_MEMORY_LIMIT_MB themselves (semgrep's OCaml
+    runtime fails under any rlimit memory cap)."""
     env = {k: v for k, v in os.environ.items() if k in _ALLOWED_ENV}
     env["PATH"] = os.pathsep.join([settings.TOOLS_DIR, "/usr/bin", "/bin", "/usr/local/bin"])
     env["GIT_TERMINAL_PROMPT"] = "0"
@@ -84,7 +92,7 @@ def run(
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        preexec_fn=_limits,
+        preexec_fn=functools.partial(_limits, limit_memory),
         shell=False,
     )
     try:

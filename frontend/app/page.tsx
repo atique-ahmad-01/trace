@@ -15,10 +15,16 @@ import { SEV_VAR, ago, fmtNum, titleCase } from '@/lib/utils'
 
 export default function OverviewPage() {
   const [scope, setScope] = useState('')
-  const [days, setDays] = useState('30')
+  const [range, setRange] = useState('30d')
   const demo = scope === '' ? undefined : scope === 'demo'
+  const intraday = range.endsWith('h')
+  const span = intraday ? { hours: parseInt(range) } : { days: parseInt(range) }
   const summary = useQuery({ queryKey: ['dashboard', scope], queryFn: () => api.get(`/dashboard/summary${qs({ demo })}`), refetchInterval: 15_000 })
-  const trends = useQuery({ queryKey: ['trends', scope, days], queryFn: () => api.get(`/dashboard/trends${qs({ demo, days })}`) })
+  const trends = useQuery({
+    queryKey: ['trends', scope, range],
+    queryFn: () => api.get(`/dashboard/trends${qs({ demo, ...span })}`),
+    refetchInterval: intraday ? 60_000 : undefined,
+  })
   const d = summary.data
 
   return (
@@ -77,9 +83,25 @@ export default function OverviewPage() {
               <CardHeader
                 title="Open findings over time"
                 description="Reconstructed from first-seen and resolved timestamps"
-                action={<Select value={days} onChange={setDays} aria-label="Range" options={[{ value: '14', label: '14 days' }, { value: '30', label: '30 days' }, { value: '90', label: '90 days' }]} className="h-8 text-xs" />}
+                action={
+                  <Select
+                    value={range}
+                    onChange={setRange}
+                    aria-label="Range"
+                    options={[
+                      { value: '5h', label: '5 hours' },
+                      { value: '12h', label: '12 hours' },
+                      { value: '24h', label: '24 hours' },
+                      { value: '7d', label: '7 days' },
+                      { value: '14d', label: '14 days' },
+                      { value: '30d', label: '30 days' },
+                      { value: '90d', label: '90 days' },
+                    ]}
+                    className="h-8 text-xs"
+                  />
+                }
               />
-              <CardBody>{trends.data ? <VulnerabilityTrends series={trends.data.series} /> : <Skeleton className="h-[240px]" />}</CardBody>
+              <CardBody>{trends.data ? <VulnerabilityTrends series={trends.data.series} intraday={intraday} /> : <Skeleton className="h-[240px]" />}</CardBody>
             </Card>
             <Card>
               <CardHeader title="Security posture" description="Weighted by open findings severity" />

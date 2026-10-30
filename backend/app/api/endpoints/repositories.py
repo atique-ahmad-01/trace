@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.common import Page, get_owned, paginate, ser
+from app.api.common import Page, get_owned, iso, paginate, ser
 from app.core.config import BACKEND_DIR, settings
 from app.core.database import get_db
 from app.core.deps import OrgContext, get_org_context, require_role
@@ -138,7 +138,7 @@ async def get_repository(repo_id: uuid.UUID, ctx: OrgContext = Depends(get_org_c
     out = await _repo_out(db, repo)
     scans = (await db.execute(select(Scan).where(Scan.repository_id == repo.id).order_by(Scan.created_at.desc()).limit(30))).scalars().all()
     commits = (await db.execute(select(RepositoryCommit).where(RepositoryCommit.repository_id == repo.id).order_by(RepositoryCommit.created_at.desc()).limit(20))).scalars().all()
-    trend = [{"date": s.completed_at.isoformat() if s.completed_at else s.created_at.isoformat(), "critical": s.critical_count, "high": s.high_count,
+    trend = [{"date": iso(s.completed_at or s.created_at), "critical": s.critical_count, "high": s.high_count,
               "medium": s.medium_count, "low": s.low_count, "total": s.total_findings} for s in reversed(scans) if s.status in ("COMPLETED", "PARTIAL")]
     return {**out, "scans": [ser(s, exclude=("log",)) for s in scans], "commits": [ser(c) for c in commits], "trend": trend}
 

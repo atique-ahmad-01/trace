@@ -77,25 +77,34 @@ async def summary(demo: Optional[bool] = Query(None, description="true=only demo
 
 
 @router.get("/trends")
-async def trends(days: int = Query(30, ge=7, le=365), demo: Optional[bool] = None, ctx: OrgContext = Depends(get_org_context), db: AsyncSession = Depends(get_db)):
-    """Daily open-finding counts by severity, reconstructed from first_seen_at / resolved_at."""
-    start = datetime.now(timezone.utc) - timedelta(days=days)
-    rows = (await db.execute(_demo_filter(select(Finding.severity, Finding.first_seen_at, Finding.resolved_at, Finding.status)
-                                          .where(Finding.organization_id == ctx.org_id), Finding, demo))).all()
+async def trends(days: int = Query(30, ge=7, le=365), hours: Optional[int] = Query(None, ge=1, le=72), demo: Optional[bool] = None,
+                 ctx: OrgContext = Depends(get_org_context), db: AsyncSession = Depends(get_db)):
+    """Open-finding counts by severity, reconstructed from first_seen_at / resolved_at.
+
+    `hours` selects an intraday window (15-minute points up to 6h, hourly beyond); otherwise `days` gives daily points."""
+    now = datetime.now(timezone.utc)
+    if hours:
+        step = timedelta(minutes=15) if hours <= 6 else timedelta(hours=1)
+        start = now - timedelta(hours=hours)
+        points = [start + step * i for i in range(int(timedelta(hours=hours) / step) + 1)]
+        label = lambda t: t.isoformat(timespec="minutes")  # noqa: E731
+    else:
+        start = now - timedelta(days=days)
+        points = [(start + timedelta(days=i)).replace(hour=23, minute=59, second=59) for i in range(days + 1)]
+        label = lambda t: t.date().isoformat()  # noqa: E731
+    utc = lambda t: t if (t is None or t.tzinfo) else t.replace(tzinfo=timezone.utc)  # noqa: E731
+    rows = [(sev, utc(first), utc(resolved), status) for sev, first, resolved, status in (await db.execute(
+        _demo_filter(select(Finding.severity, Finding.first_seen_at, Finding.resolved_at, Finding.status)
+                     .where(Finding.organization_id == ctx.org_id), Finding, demo))).all()]
     series = []
-    for i in range(days + 1):
-        day_end = (start + timedelta(days=i)).replace(hour=23, minute=59, second=59)
+    for at in points:
         point = defaultdict(int)
         for sev, first, resolved, status in rows:
-            first = first if (first is None or first.tzinfo) else first.replace(tzinfo=timezone.utc)
-            resolved = resolved if (resolved is None or resolved.tzinfo) else resolved.replace(tzinfo=timezone.utc)
-            if first and first <= day_end and (resolved is None or resolved > day_end) and status not in ("FALSE_POSITIVE",):
+            if first and first <= at and (resolved is None or resolved > at) and status not in ("FALSE_POSITIVE",):
                 point[sev] += 1
-        series.append({"date": day_end.date().isoformat(), **{s: point.get(s, 0) for s in SEVS}})
+        series.append({"date": label(at), **{s: point.get(s, 0) for s in SEVS}})
     new_by_day = defaultdict(int)
     for _, first, _, _ in rows:
-        if first:
-            first = first if first.tzinfo else first.replace(tzinfo=timezone.utc)
-            if first >= start:
-                new_by_day[first.date().isoformat()] += 1
+        if first and first >= start:
+            new_by_day[first.date().isoformat()] += 1
     return {"series": series, "new_by_day": [{"date": d, "count": c} for d, c in sorted(new_by_day.items())]}
