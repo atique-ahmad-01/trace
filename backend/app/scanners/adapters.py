@@ -263,8 +263,10 @@ def run_semgrep(root: str, work: str) -> ScannerOutcome:
     out_file = os.path.join(work, "semgrep.json")
     config = settings.SEMGREP_CONFIG if settings.SEMGREP_CONFIG != "auto" else "p/default"
     argv = [binary, "scan", "--config", config, "--json", "--metrics", "off", "--quiet", "--no-git-ignore",
-            "--timeout", "30", "--max-target-bytes", "1000000", "-o", out_file, root]
-    res = runner.run(argv, extra_env={"HOME": work, "SEMGREP_SEND_METRICS": "off", "SEMGREP_ENABLE_VERSION_CHECK": "0"})
+            "--timeout", "30", "--max-target-bytes", "1000000", "--max-memory", str(settings.SCANNER_MEMORY_LIMIT_MB),
+            "-o", out_file, root]
+    res = runner.run(argv, extra_env={"HOME": work, "SEMGREP_SEND_METRICS": "off", "SEMGREP_ENABLE_VERSION_CHECK": "0"},
+                     limit_memory=False)
     return _finish("semgrep", binary, ["--version"], argv, res, out_file, lambda d: parse_semgrep(d, root), ok_codes={0, 1})
 
 
