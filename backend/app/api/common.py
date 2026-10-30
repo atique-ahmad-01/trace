@@ -2,12 +2,17 @@
 
 import enum
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, Optional, Type
 
 from fastapi import HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+
+def iso(v: datetime) -> str:
+    """ISO 8601 with offset. SQLite drops tzinfo; stored values are UTC, so say so or browsers parse them as local time."""
+    return (v if v.tzinfo else v.replace(tzinfo=timezone.utc)).isoformat()
 
 
 def ser(obj, exclude: Iterable[str] = (), include: Optional[Iterable[str]] = None) -> Dict[str, Any]:
@@ -24,7 +29,7 @@ def ser(obj, exclude: Iterable[str] = (), include: Optional[Iterable[str]] = Non
         if isinstance(v, uuid.UUID):
             v = str(v)
         elif isinstance(v, datetime):
-            v = v.isoformat()
+            v = iso(v)
         elif isinstance(v, enum.Enum):
             v = v.value
         out[c] = v

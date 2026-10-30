@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.common import Page, get_owned, paginate, ser
+from app.api.common import Page, get_owned, iso, paginate, ser
 from app.core.database import get_db
 from app.core.deps import OrgContext, get_org_context, require_role
 from app.db.models import EvaluationCase, EvaluationDataset, EvaluationResult, EvaluationRun
@@ -136,6 +136,6 @@ async def compare(dataset_id: uuid.UUID, ctx: OrgContext = Depends(get_org_conte
         key = f"{r.mode}|{r.model}"
         if key not in latest and r.status == "completed":
             latest[key] = {"run_id": str(r.id), "mode": r.mode, "provider": r.provider, "model": r.model, "metrics": r.metrics,
-                           "completed_at": r.completed_at.isoformat() if r.completed_at else None}
+                           "completed_at": iso(r.completed_at) if r.completed_at else None}
     modes_run = {v["mode"] for v in latest.values()}
     return {"configurations": list(latest.values()), "not_run": [m for m in ("base", "rag", "agentic_rag") if m not in modes_run]}

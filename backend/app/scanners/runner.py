@@ -4,7 +4,7 @@ Safe subprocess execution for scanners and git.
 - argv lists only (never a shell), no interpolation of untrusted strings into a shell
 - minimal environment (application secrets are never inherited)
 - wall-clock timeout with process-group kill
-- CPU-time / file-size / open-file limits via setrlimit (POSIX)
+- CPU-time / file-size / open-file / data-memory limits via setrlimit (POSIX)
 """
 
 import os
@@ -56,9 +56,11 @@ def _limits():
             resource.setrlimit(res, (new, hard))
         except (ValueError, OSError):
             pass
-    try:  # Not enforced on macOS; effective on Linux.
+    # RLIMIT_DATA, not RLIMIT_AS: Go (wazero in gitleaks) and OCaml (semgrep) runtimes reserve far more
+    # address space than they use and crash at startup under an address-space cap. Not enforced on macOS.
+    try:
         mem = settings.SCANNER_MEMORY_LIMIT_MB * 1024 * 1024
-        resource.setrlimit(resource.RLIMIT_AS, (mem, mem))
+        resource.setrlimit(resource.RLIMIT_DATA, (mem, mem))
     except (ValueError, OSError):
         pass
 

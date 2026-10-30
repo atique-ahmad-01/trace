@@ -146,6 +146,10 @@ async def test_dashboard_and_reports_render(client):
     s = (await client.get("/api/v1/dashboard/summary", headers=h)).json()
     assert s["open_findings"] == 1 and s["data_scope"]["demo_data_present"] is False
     assert (await client.get("/api/v1/dashboard/trends?days=7", headers=h)).status_code == 200
+    five_h = (await client.get("/api/v1/dashboard/trends?hours=5", headers=h)).json()["series"]
+    assert len(five_h) == 21 and "T" in five_h[0]["date"]  # 15-minute points
+    assert five_h[-1]["HIGH"] == 1
+    assert len((await client.get("/api/v1/dashboard/trends?hours=24", headers=h)).json()["series"]) == 25  # hourly
     rep = await client.get("/api/v1/reports/executive?format=pdf", headers=h)
     assert rep.status_code == 200 and rep.content.startswith(b"%PDF")
     j = (await client.get("/api/v1/reports/executive", headers=h)).json()
