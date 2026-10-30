@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 97%;
+    --surface: 0 0% 100%;
+    --elevated: 220 20% 99%;
+    --foreground: 222 30% 12%;
+    --muted: 220 16% 93%;
+    --muted-foreground: 220 9% 42%;
+    --border: 220 14% 88%;
+    --input: 220 14% 85%;
+    --ring: 186 72% 34%;
+    --primary: 186 72% 32%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 220 16% 94%;
+    --accent-foreground: 222 30% 12%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 60% 34%;
+    --warning: 38 92% 40%;
+    --sev-critical: 350 78% 48%;
+    --sev-high: 20 88% 48%;
+    --sev-medium: 40 90% 42%;
+    --sev-low: 205 70% 46%;
+    --sev-info: 220 9% 55%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 224 24% 6%;
+    --surface: 224 20% 9%;
+    --elevated: 224 18% 12%;
+    --foreground: 220 20% 92%;
+    --muted: 224 16% 15%;
+    --muted-foreground: 220 10% 60%;
+    --border: 224 14% 17%;
+    --input: 224 14% 21%;
+    --ring: 186 70% 48%;
+    --primary: 186 72% 46%;
+    --primary-foreground: 224 30% 8%;
+    --accent: 224 16% 15%;
+    --accent-foreground: 220 20% 92%;
+    --destructive: 0 70% 56%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 55% 46%;
+    --warning: 38 92% 54%;
+    --sev-critical: 350 82% 62%;
+    --sev-high: 22 92% 58%;
+    --sev-medium: 42 92% 56%;
+    --sev-low: 205 80% 62%;
+    --sev-info: 220 10% 60%;
+  }
+  * { @apply border-border; }
+  html, body { height: 100%; }
+  body { @apply bg-background text-foreground antialiased; font-feature-settings: 'cv11', 'ss01'; }
+  ::selection { background: hsl(var(--primary) / 0.3); }
+}
+
+@layer components {
+  .tabular { font-variant-numeric: tabular-nums; }
+  .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 4px; }
+}

@@ -1,0 +1,45 @@
+# Secrets & local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local toolchain (scripts/install-tools.sh)
+/.tools/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+/backend/.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Backend runtime data (SQLite, embedded Qdrant, scan work dirs)
+/backend/storage/
+/backend/*.db
+/backend/*.db-wal
+/backend/*.db-shm
+
+# Node / Next.js
+node_modules/
+/frontend/.next/
+/frontend/out/
+/frontend/next-env.d.ts
+*.tsbuildinfo
+npm-debug.log*
+
+# Editors & OS
+.vscode/
+.idea/
+.claude/
+*.swp
+.DS_Store
+
+# Logs
+*.log
+
+# Local overrides
+docker-compose.override.yml

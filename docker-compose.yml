@@ -1,0 +1,89 @@
+# TRACE local stack: PostgreSQL, Redis (RQ), Qdrant, Ollama, API, worker, frontend.
+#   cp .env.example .env   # set SECRET_KEY / JWT_SECRET_KEY
+#   docker compose up -d --build
+#   docker compose exec ollama ollama pull qwen2.5-coder:7b && docker compose exec ollama ollama pull nomic-embed-text
+
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql+asyncpg://trace:trace@postgres:5432/trace
+  REDIS_URL: redis://redis:6379/0
+  QDRANT_URL: http://qdrant:6333
+  OLLAMA_BASE_URL: http://ollama:11434
+  WORK_DIR: /app/storage/work
+  CORS_ORIGINS: http://localhost:3000
+
+x-hardening: &hardening
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: ["ALL"]
+  read_only: false
+  pids_limit: 512
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_DB: trace
+      POSTGRES_USER: trace
+      POSTGRES_PASSWORD: trace
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trace"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    volumes: [qdrant_data:/qdrant/storage]
+
+  ollama:
+    image: ollama/ollama:0.5.4
+    volumes: [ollama_data:/root/.ollama]
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment: *backend-env
+    ports: ["8000:8000"]
+    volumes: [backend_storage:/app/storage]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      qdrant: { condition: service_started }
+    <<: *hardening
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    command: ["rq", "worker", "--url", "redis://redis:6379/0", "trace"]
+    env_file: .env
+    environment: *backend-env
+    volumes: [backend_storage:/app/storage]
+    depends_on:
+      backend: { condition: service_healthy }
+    <<: *hardening
+    deploy:
+      resources:
+        limits: { cpus: "4", memory: 6g }
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports: ["3000:3000"]
+    depends_on: [backend]
+    <<: *hardening
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  ollama_data:
+  backend_storage:

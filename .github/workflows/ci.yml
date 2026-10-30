@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install scanners and uv
+        run: bash scripts/install-tools.sh
+      - name: Create venv and install dependencies
+        run: |
+          .tools/bin/uv python install 3.12
+          .tools/bin/uv venv --python 3.12 backend/.venv
+          .tools/bin/uv pip install --python backend/.venv/bin/python -r backend/requirements.txt
+      - name: Tests (unit, API, end-to-end with real scanners)
+        working-directory: backend
+        run: .venv/bin/python -m pytest -q
+
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx next lint
+      - run: npx next build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
