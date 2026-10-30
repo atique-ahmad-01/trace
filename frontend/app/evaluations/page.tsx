@@ -56,7 +56,7 @@ export default function EvaluationsPage() {
   const configs = compare.data?.configurations || []
   const series = (c: any) => `${modeLabel(c.mode)} · ${c.model}`
   const metricKeys = RATE_METRICS.filter((m) => configs.some((c: any) => c.metrics?.[m] !== undefined && c.metrics?.[m] !== null))
-  const chartData = metricKeys.map((m) => ({ metric: titleCase(m).replace('Vulnerability Identification', 'Vuln ID'), ...Object.fromEntries(configs.map((c: any) => [series(c), c.metrics?.[m] !== null && c.metrics?.[m] !== undefined ? Math.round(c.metrics[m] * 1000) / 10 : null])) }))
+  const chartData = metricKeys.map((m) => ({ metric: titleCase(m).replace('Vulnerability Identification', 'Vuln ID').replace('Cwe', 'CWE').replace('Cve', 'CVE'), ...Object.fromEntries(configs.map((c: any) => [series(c), c.metrics?.[m] !== null && c.metrics?.[m] !== undefined ? Math.round(c.metrics[m] * 1000) / 10 : null])) }))
   const selected = datasets.data?.find((d) => d.id === ds)
   const active = runs.data?.items.filter((r) => ['queued', 'running'].includes(r.status)).length || 0
 
