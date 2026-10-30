@@ -16,7 +16,7 @@
 ![Next.js 14](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
 ![LangGraph](https://img.shields.io/badge/LangGraph-agents-1C3C3C)
 
-[Features](#-features) · [Architecture](#-architecture) · [Quick start](#-quick-start) · [Configuration](#%EF%B8%8F-configuration) · [Security model](#-security-model) · [Tests](#-tests)
+[Demo](#-demo) · [Features](#-features) · [Architecture](#-architecture) · [Quick start](#-quick-start) · [Configuration](#%EF%B8%8F-configuration) · [Security model](#-security-model) · [Tests](#-tests)
 
 </div>
 
@@ -32,19 +32,17 @@ TRACE scans repositories with real security scanners, normalizes and deduplicate
 | **C** | **Compliance** | Human approval and a full audit trail for every change |
 | **E** | **Evaluation** | Fixes verified by re-scan; agents measured by benchmarks |
 
+## 🎬 Demo
+
 <p align="center">
-  <img src="docs/images/dashboard.png" alt="TRACE security overview dashboard" width="900" />
+  <a href="docs/demo-video/trace-demo.mp4">
+    <img src="docs/demo-video/thumbnail.png" alt="Watch the TRACE product demo (2 min)" width="900" />
+  </a>
+  <br />
+  <sub><b><a href="docs/demo-video/trace-demo.mp4">▶ Watch the 2-minute demo</a></b> · <a href="docs/demo-video/trace-demo-30s.mp4">30-second cut</a> · <a href="docs/demo-video/trace-architecture.mp4">Architecture animation</a></sub>
 </p>
 
-<details>
-<summary><b>More screenshots</b></summary>
-<br />
-
-| Sign in | Vulnerabilities |
-|:-:|:-:|
-| <img src="docs/images/login.png" alt="TRACE sign-in page" width="440" /> | <img src="docs/images/vulnerabilities.png" alt="TRACE vulnerabilities list" width="440" /> |
-
-</details>
+Narrated walkthrough of the real product: a scan with four scanners, live vulnerability intelligence, a LangGraph AI investigation with cited evidence, and a human-approved fix verified by re-scanning. Every screen and number comes from a real run.
 
 ## ✨ Features
 
@@ -106,7 +104,7 @@ The full set of diagrams is in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**:
 ```text
 backend/    FastAPI API · scanners · intel · RAG · LangGraph agents · MCP · evals · tests
 frontend/   Next.js console (dashboard, findings, agents, intel, MCP, remediation, evals, reports)
-docs/       architecture diagrams and screenshots
+docs/       architecture diagrams · demo video (docs/demo-video)
 scripts/    tool install · local setup · dev runner
 ```
 

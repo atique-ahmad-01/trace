@@ -43,3 +43,8 @@ npm-debug.log*
 
 # Local overrides
 docker-compose.override.yml
+
+# Demo video: only the videos and the README thumbnail are committed; scripts, docs and source stay local
+/docs/demo-video/*
+!/docs/demo-video/*.mp4
+!/docs/demo-video/thumbnail.png
