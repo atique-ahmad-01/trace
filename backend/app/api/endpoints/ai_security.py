@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.common import Page, get_owned, paginate, ser
 from app.core.database import get_db
 from app.core.deps import OrgContext, get_org_context, require_role
+from app.integrations import registry as integrations
 from app.db.models import AISecurityAssessment, AISecurityResult, Repository
 from app.services import jobs
 from app.services.ai_security import MITIGATIONS, PROBES, STATIC_CHECKS
@@ -58,6 +59,8 @@ async def create(body: AssessmentIn, ctx: OrgContext = Depends(require_role("mem
     for p in body.custom_probes:
         if p.category not in MITIGATIONS:
             raise HTTPException(422, f"Unknown category {p.category}")
+    if body.target_type == "llm_endpoint":
+        await integrations.require(db, ctx.org_id, "model_provider")
     cfg: Dict[str, Any] = {"provider": body.provider, "model": body.model, "system_prompt": body.system_prompt, "temperature": body.temperature,
                            "custom_probes": [p.model_dump() for p in body.custom_probes]} if body.target_type == "llm_endpoint" else {}
     a = AISecurityAssessment(organization_id=ctx.org_id, name=body.name, description=body.description, target_type=body.target_type,

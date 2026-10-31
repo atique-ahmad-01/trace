@@ -19,7 +19,7 @@ from app.core import database
 from app.core.config import settings
 from app.db.models import AgentEvent, AgentInvestigation, Finding, FindingStatus, RemediationProposal, Repository
 from app.intel import service as intel
-from app.llm.provider import get_provider
+from app.integrations.registry import resolve_provider
 from app.mcp import service as mcp
 from app.rag import engine as rag
 from app.services import jobs, patching, snapshot
@@ -36,7 +36,7 @@ def finding_to_dict(f: Finding) -> Dict[str, Any]:
 
 async def create_investigation(db: AsyncSession, finding: Finding, user_id=None, mode: str = "agentic_rag",
                                provider: Optional[str] = None, model: Optional[str] = None) -> AgentInvestigation:
-    p = get_provider(provider, model)
+    p = await resolve_provider(db, finding.organization_id, provider, model)
     inv = AgentInvestigation(organization_id=finding.organization_id, finding_id=finding.id, requested_by=user_id, status="queued",
                              mode=mode, model=f"{p.name}:{p.model}" if p.model else p.name)
     db.add(inv)
@@ -70,9 +70,9 @@ async def run_investigation(inv_id: str, provider: str = "", model: str = "") ->
         await mcp.ensure_builtin(db, inv.organization_id)
         await db.commit()
         org_id = inv.organization_id
+        llm = await resolve_provider(db, org_id, provider or None, model or None)
 
     emit = _Emitter(iid)
-    llm = get_provider(provider or None, model or None)
     t0 = time.monotonic()
     snap_cm, snap = None, None
     try:

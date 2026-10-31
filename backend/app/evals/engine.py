@@ -31,7 +31,8 @@ from app.core import database
 from app.core.config import settings
 from app.db.models import EvaluationCase, EvaluationDataset, EvaluationResult, EvaluationRun
 from app.evals.datasets import BUILTIN_DATASETS
-from app.llm.provider import LLMUnavailable, estimate_cost, get_provider
+from app.integrations.registry import resolve_provider
+from app.llm.provider import LLMUnavailable, estimate_cost
 from app.rag import engine as rag
 
 VULN_SCHEMA = ('{"vulnerable": bool, "cwe": "CWE-<n>"|null, "severity": "CRITICAL"|"HIGH"|"MEDIUM"|"LOW"|"INFO", '
@@ -205,7 +206,7 @@ async def run_evaluation(run_id: str) -> None:
         await db.commit()
         task, mode = ds.task_type, run.mode
         case_data = [(c.id, c.case_key, c.input, c.expected, c.tags) for c in cases]
-    provider = get_provider(run.provider or None, run.model or None)
+        provider = await resolve_provider(db, run.organization_id, run.provider or None, run.model or None)
     collected: List[Dict[str, Any]] = []
     try:
         for cid, key, inp, expected, tags in case_data:

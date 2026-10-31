@@ -8,6 +8,7 @@ import { BarChart3, Bot, Brain, Check, Code2, Database, Library, Play, ShieldAle
 import { ChartTooltip } from '@/components/dashboard/vulnerability-trends'
 import { Button, Card, CardBody, CardHeader, EmptyState, ErrorState, Input, Label, Notice, PageHeader, Pagination, Skeleton, StatusBadge, THead, Table, Td, Th, Tr } from '@/components/ui'
 import { api, qs, type Paged } from '@/lib/api'
+import { useRequireIntegration } from '@/lib/integrations'
 import { ago, cn, pct, titleCase } from '@/lib/utils'
 
 const MODES: Record<string, { label: string; detail: string; color: string; icon: React.ElementType }> = {
@@ -52,6 +53,7 @@ export default function EvaluationsPage() {
     refetchInterval: (q) => ((q.state.data as any)?.items?.some((r: any) => ['queued', 'running'].includes(r.status)) ? 4000 : false),
   })
   const compare = useQuery({ queryKey: ['eval-compare', ds, runs.data?.items.map((r) => r.status).join()], queryFn: () => api.get(`/evaluations/compare?dataset_id=${ds}`), enabled: !!ds })
+  const llm = useRequireIntegration('model_provider')
   const run = useMutation({ mutationFn: () => api.post('/evaluations/runs', { dataset_id: ds, modes, model: model || undefined, case_limit: limit ? Number(limit) : undefined }), onSuccess: () => qc.invalidateQueries({ queryKey: ['eval-runs'] }) })
   const configs = compare.data?.configurations || []
   const series = (c: any) => `${modeLabel(c.mode)} · ${c.model}`
@@ -133,10 +135,10 @@ export default function EvaluationsPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div><Label hint="blank = default">Model</Label><Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="qwen2.5-coder:7b" /></div>
+              <div><Label hint={`blank = ${llm.item?.config.model || "configured model"}`}>Model</Label><Input value={model} onChange={(e) => setModel(e.target.value)} placeholder={llm.item?.config.model || "qwen2.5-coder:7b"} /></div>
               <div><Label hint="optional">Case limit</Label><Input type="number" min={1} value={limit} onChange={(e) => setLimit(e.target.value)} placeholder={selected ? `all ${selected.case_count}` : undefined} /></div>
             </div>
-            <Button className="w-full" onClick={() => run.mutate()} loading={run.isPending} disabled={!ds || !modes.length}><Play /> Start {modes.length} run{modes.length === 1 ? '' : 's'}</Button>
+            <Button className="w-full" onClick={llm.guard(() => run.mutate())} loading={run.isPending} disabled={!ds || !modes.length}><Play /> Start {modes.length} run{modes.length === 1 ? '' : 's'}</Button>
             {active > 0 && <p className="text-center text-xs text-muted-foreground">{active} run{active === 1 ? '' : 's'} in progress, results update automatically</p>}
             {run.error ? <ErrorState error={run.error} /> : null}
           </CardBody>

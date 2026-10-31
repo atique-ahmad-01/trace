@@ -1,9 +1,10 @@
 """
 End-to-end workflow: connect repository -> scan (real scanners) -> findings -> AI investigation
-(LangGraph) -> remediation proposal -> human approval -> verification (real patch + re-scan).
+blocked until a model provider is configured -> configure it via the Integrations API -> AI
+investigation (LangGraph) -> remediation proposal -> human approval -> verification (real patch + re-scan).
 
-The LLM is replaced by `ScriptedTestProvider`, an explicitly labeled TEST DOUBLE, so the
-workflow is deterministic and does not depend on a local model. Vulnerability intelligence
+The configured provider is swapped for `ScriptedTestProvider`, an explicitly labeled TEST DOUBLE, so
+the workflow is deterministic and does not depend on a local model. Vulnerability intelligence
 lookups are stubbed (marked source status "test_stub") to keep the test hermetic; scanners,
 snapshots, patching and verification are real.
 """
@@ -16,6 +17,7 @@ from sqlalchemy import select
 
 from app.core import database
 from app.db.models import AgentEvent, AgentInvestigation, Finding, RemediationProposal, VerificationRun, VulnerabilityRecord
+from app.integrations import registry
 from app.llm.provider import BaseProvider, LLMResult
 
 from .conftest import register
@@ -68,7 +70,7 @@ async def test_full_workflow(client, scanners_available, monkeypatch):
     from app.services.scan_service import run_scan
 
     monkeypatch.setattr(intel, "lookup", _stub_lookup)
-    monkeypatch.setattr(agent_service, "get_provider", lambda *a, **k: ScriptedTestProvider())
+    monkeypatch.setattr(registry, "build_provider", lambda *a, **k: ScriptedTestProvider())
 
     h = await register(client, "e2e")
     repo = (await client.post("/api/v1/repositories", headers=h, json={"provider": "local", "local_path": "vulnerable-app"})).json()
@@ -91,7 +93,14 @@ async def test_full_workflow(client, scanners_available, monkeypatch):
     assert "gitleaks" in secrets["items"][0]["detected_by"] and secrets["items"][0]["file_path"] == "src/settings_dev.py"
     assert (await client.get("/api/v1/findings?finding_type=sast", headers=h)).json()["total"] >= 5
 
-    # 3. investigation (LangGraph)
+    # 3. investigation is gated until the org configures a model provider in Settings -> Integrations
+    r = await client.post(f"/api/v1/findings/{target['id']}/investigate", headers=h, json={"mode": "agentic_rag"})
+    assert r.status_code == 409 and r.json()["detail"]["integration"] == "model_provider"
+    r = await client.put("/api/v1/integrations/model_provider", headers=h,
+                         json={"config": {"provider": "ollama", "base_url": "http://ollama.test:11434", "model": "scripted-test-model"}})
+    assert r.status_code == 200 and r.json()["ready"], r.text
+
+    # 4. investigation (LangGraph)
     inv = (await client.post(f"/api/v1/findings/{target['id']}/investigate", headers=h, json={"mode": "agentic_rag"})).json()
     await agent_service.run_investigation(inv["id"])
     d = (await client.get(f"/api/v1/agents/investigations/{inv['id']}", headers=h)).json()
@@ -103,7 +112,7 @@ async def test_full_workflow(client, scanners_available, monkeypatch):
     assert d["risk_assessment"]["priority"] == "P1"
     assert any(t["invoked_by"] == "agent:code_analysis" and t["status"] == "success" for t in d["tool_executions"]), "MCP search_code executed"
 
-    # 4. remediation proposal with a real manifest patch
+    # 5. remediation proposal with a real manifest patch
     props = (await client.get("/api/v1/remediation/proposals", headers=h)).json()["items"]
     assert len(props) == 1
     p = (await client.get(f"/api/v1/remediation/proposals/{props[0]['id']}", headers=h)).json()
@@ -115,7 +124,7 @@ async def test_full_workflow(client, scanners_available, monkeypatch):
     r = await client.post(f"/api/v1/remediation/proposals/{p['id']}/decision", headers=h, json={"decision": "approved", "comment": "LGTM"})
     assert r.status_code == 200 and r.json()["status"] == "approved"
 
-    # 5. verification: apply patch to a fresh snapshot, re-scan before/after
+    # 6. verification: apply patch to a fresh snapshot, re-scan before/after
     vr = (await client.post(f"/api/v1/remediation/proposals/{p['id']}/verify", headers=h)).json()
     await run_verification(vr["id"])
     p2 = (await client.get(f"/api/v1/remediation/proposals/{p['id']}", headers=h)).json()
@@ -125,7 +134,7 @@ async def test_full_workflow(client, scanners_available, monkeypatch):
     assert v["status"] == "passed", v["details"]
     assert p2["status"] == "verified"
 
-    # 6. audit trail
+    # 7. audit trail
     actions = [a["action"] for a in (await client.get("/api/v1/organizations/current/audit?page_size=100", headers=h)).json()["items"]]
-    for a in ("repository.connect", "scan.trigger", "investigation.start", "remediation.approved", "remediation.verify"):
+    for a in ("repository.connect", "scan.trigger", "integration.save", "investigation.start", "remediation.approved", "remediation.verify"):
         assert a in actions

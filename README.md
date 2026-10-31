@@ -58,7 +58,7 @@ Narrated walkthrough of the real product: a scan with four scanners, live vulner
 | 🔧 **Remediation** | Review the diff and approve or reject it, with a justification required when evidence is insufficient. Verify by applying the patch to a snapshot and re-scanning before and after, then open a GitHub PR. Nothing is merged automatically. |
 | 📊 **Evaluations** | Built-in datasets (code analysis, prompt-injection resistance, CVE matching). Compare base, RAG and agentic-RAG modes. Only executed runs show metrics. |
 | 📄 **Reports** | Executive, repository, vulnerability, AI-security, remediation and evaluation reports, each as PDF or JSON. |
-| ⚙️ **Settings** | Service status, members and roles, encrypted GitHub token, audit trail. |
+| ⚙️ **Settings** | Integrations (model provider, GitHub, Langfuse) connected and verified from the UI, service status, members and roles, audit trail. |
 
 The dashboard charts open findings over the last 5, 12 or 24 hours, or 7 to 90 days.
 
@@ -141,16 +141,36 @@ Compose runs PostgreSQL, Redis + an RQ worker, a Qdrant server, Ollama, the API 
 
 ## ⚙️ Configuration
 
-All configuration is environment-driven. See [.env.example](.env.example) for every option. Key settings:
+### Integrations (from the UI)
+
+External services are connected per organization in **Settings → Integrations**, not in `.env`:
+
+| Integration | Needed for | Verified by |
+|---|---|---|
+| **Model provider** — Ollama, OpenAI-compatible (vLLM, OpenAI, …) or Anthropic | AI investigations, evaluations, LLM-endpoint assessments, auto-investigate | Listing the endpoint's models and checking the chosen one is available |
+| **GitHub** token | Private repositories and fix pull requests (when no GitHub App installation covers the repo) | `GET /user` |
+| **Langfuse** (optional) | LLM observability | Listing projects with the key pair |
+
+Saving runs a live check. Secrets are encrypted at rest (Fernet) and never returned by the API; only the last 4 characters are shown. Admins and owners can change integrations; every member can see their status.
+
+If you start a feature whose integration is missing or failed verification, the API returns `409 integration_required`. The app then shows a **"Set up … first"** prompt that opens the right settings card. After the integration is verified, a **Continue where you left off** button takes you back. Until a model provider is connected, a banner explains which features are unavailable.
+
+The `MODEL_PROVIDER`, `OLLAMA_*`, `OPENAI_COMPATIBLE_*`, `ANTHROPIC_*`, `GITHUB_TOKEN` and `LANGFUSE_*` variables are only a **fallback** for organizations that have not configured their own integration. The fallback is on by default for local development and **off when `ENVIRONMENT=production`**, so a production deployment never uses a server-wide key by accident. Override it with `INTEGRATIONS_ENV_FALLBACK=true|false`.
+
+### Deployment settings (environment)
+
+Infrastructure stays environment-driven. See [.env.example](.env.example) for every option. Key settings:
 
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | SQLite (default) or `postgresql+asyncpg://…` |
 | `REDIS_URL` | Enables RQ workers (otherwise jobs run in-process) |
 | `QDRANT_URL` | Qdrant server (otherwise embedded on-disk mode, which is single-process) |
-| `MODEL_PROVIDER` | `ollama`, `openai_compatible`, `anthropic` or `none`, with matching `OLLAMA_*` / `OPENAI_COMPATIBLE_*` / `ANTHROPIC_*` |
-| `ALLOW_SOURCE_TO_HOSTED_LLM` | `false` by default: repository code is never sent to hosted models |
-| `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY_PATH`, `GITHUB_APP_SLUG`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_TOKEN` | GitHub App and token integration |
+| `SECRET_KEY`, `JWT_SECRET_KEY`, `ENCRYPTION_KEY` | Required in production; `ENCRYPTION_KEY` encrypts integration secrets |
+| `INTEGRATIONS_ENV_FALLBACK` | Use the env model/GitHub/Langfuse settings for orgs without their own (default: on, off in production) |
+| `ALLOW_SOURCE_TO_HOSTED_LLM` | `false` by default: repository code is never sent to hosted models (per org, the model integration has its own switch) |
+| `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY_PATH`, `GITHUB_APP_SLUG`, `GITHUB_WEBHOOK_SECRET` | GitHub App integration |
+| `EMBEDDING_PROVIDER`, `EMBEDDING_MODEL` | Embeddings for the shared RAG index (instance-wide, so they stay in env) |
 | `NVD_API_KEY` | Raises the NVD rate limit |
 
 ## 🔒 Security model

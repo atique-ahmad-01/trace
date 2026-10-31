@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.common import Page, get_owned, iso, paginate, ser
 from app.core.database import get_db
 from app.core.deps import OrgContext, get_org_context, require_role
+from app.integrations import registry as integrations
 from app.db.models import EvaluationCase, EvaluationDataset, EvaluationResult, EvaluationRun
 from app.services import jobs
 from app.services.audit import audit
@@ -92,9 +93,8 @@ async def create_runs(body: RunIn, ctx: OrgContext = Depends(require_role("membe
         raise HTTPException(404, "Dataset not found")
     if set(body.modes) - {"base", "rag", "agentic_rag"}:
         raise HTTPException(422, "modes must be base, rag, agentic_rag")
-    from app.llm.provider import get_provider
-
-    p = get_provider(body.provider, body.model)
+    await integrations.require(db, ctx.org_id, "model_provider")
+    p = await integrations.resolve_provider(db, ctx.org_id, body.provider, body.model)
     runs = []
     for mode in body.modes:
         r = EvaluationRun(organization_id=ctx.org_id, dataset_id=d.id, mode=mode, provider=p.name, model=p.model, case_limit=body.case_limit,

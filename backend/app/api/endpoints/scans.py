@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.common import Page, get_owned, paginate, ser
 from app.core.database import get_db
 from app.core.deps import OrgContext, get_org_context, require_role
+from app.integrations import registry as integrations
 from app.db.models import Repository, Scan, ScannerExecution
 from app.scanners.adapters import SCANNERS, scanner_status
 from app.services import jobs
@@ -45,6 +46,8 @@ async def create_scan(body: ScanIn, ctx: OrgContext = Depends(require_role("memb
     active = (await db.execute(select(Scan).where(Scan.repository_id == repo.id, Scan.status.in_(["PENDING", "RUNNING"])))).scalars().first()
     if active:
         raise HTTPException(409, "A scan is already running for this repository")
+    if body.auto_investigate:
+        await integrations.require(db, ctx.org_id, "model_provider")
     scan = await queue_scan(db, repo, trigger="manual", user_id=ctx.user.id, branch=body.branch, commit=body.commit_sha,
                             scanners=body.scanners, auto_investigate=body.auto_investigate)
     await audit(db, "scan.trigger", org_id=ctx.org_id, user=ctx.user, resource_type="scan", resource_id=scan.id, details={"repository": repo.full_name})

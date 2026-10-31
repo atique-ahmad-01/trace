@@ -164,7 +164,10 @@ async def open_pull_request(db, prop: RemediationProposal, user) -> Dict[str, An
         raise RemediationError("Proposal has no patch")
     token = await github.token_for_repo(db, repo)
     if not token:
-        raise RemediationError("No GitHub credential with write access is configured")
+        from app.integrations.registry import IntegrationRequired
+
+        raise IntegrationRequired("github", "Opening a pull request needs a GitHub token with write access (or a GitHub App "
+                                            "installation for this repository). An admin can add one in Settings → Integrations.")
     _validate_patch_paths(prop.patch, prop.files_changed or [])
     base_sha = prop.base_commit
     if not base_sha or base_sha.startswith("local-"):

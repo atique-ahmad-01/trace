@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.common import Page, get_owned, paginate, ser
 from app.core.database import get_db
 from app.core.deps import OrgContext, get_org_context, require_role
+from app.integrations import registry as integrations
 from app.db.models import AgentInvestigation, Finding, FindingStatus, RemediationProposal, Repository, VerificationRun, VulnerabilityRecord
 from app.intel.service import record_to_dict
 from app.services.audit import audit
@@ -112,6 +113,7 @@ async def investigate(finding_id: uuid.UUID, body: InvestigateIn = InvestigateIn
                                                                  AgentInvestigation.status.in_(["queued", "running"])))).scalars().first()
     if running:
         raise HTTPException(409, "An investigation is already running for this finding")
+    await integrations.require(db, ctx.org_id, "model_provider")
     inv = await create_investigation(db, f, user_id=ctx.user.id, mode=body.mode, provider=body.provider, model=body.model)
     await audit(db, "investigation.start", org_id=ctx.org_id, user=ctx.user, resource_type="investigation", resource_id=inv.id,
                 details={"finding": str(f.id), "mode": body.mode, "model": inv.model})
