@@ -16,7 +16,7 @@
 ![Next.js 14](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
 ![LangGraph](https://img.shields.io/badge/LangGraph-agents-1C3C3C)
 
-[Demo](#-demo) · [Features](#-features) · [Architecture](#-architecture) · [Quick start](#-quick-start) · [Configuration](#%EF%B8%8F-configuration) · [Security model](#-security-model) · [Tests](#-tests)
+[Demo](#-demo) · [Features](#-features) · [Architecture](#-architecture) · [Quick start](#-quick-start) · [Production](#production-vercel--render) · [Configuration](#%EF%B8%8F-configuration) · [Security model](#-security-model) · [Tests](#-tests)
 
 </div>
 
@@ -142,6 +142,17 @@ docker compose exec ollama ollama pull nomic-embed-text
 Then connect the model in **Settings → Integrations**. Inside Compose, Ollama's base URL is `http://ollama:11434`.
 
 Compose runs PostgreSQL, Redis + an RQ worker, a Qdrant server, Ollama, the API and the frontend. Containers drop all capabilities, use `no-new-privileges` and run as a non-root user, and the worker has CPU and memory limits.
+
+### Production (Vercel + Render)
+
+The Next.js frontend runs on **Vercel**. The API runs on **Render**, because scans, cloning and long agent jobs need a container with a disk, which Vercel functions do not provide.
+
+1. **Backend:** in Render, choose **New → Blueprint** and pick this repository. [`render.yaml`](render.yaml) creates the `trace-api` Docker service (from `backend/Dockerfile`) and a PostgreSQL 16 database. When prompted, set `DEMO_ADMIN_PASSWORD` to a strong password (12+ characters). In production the default password is refused and seeding is skipped.
+2. **Frontend:** a Vercel project with **Root Directory** `frontend`, connected to this repository. Set `NEXT_PUBLIC_API_URL` to the Render service URL. Pushes to `main` deploy to production; other branches get preview URLs.
+3. **CORS:** `CORS_ORIGINS` and `CORS_ORIGIN_REGEX` in `render.yaml` allow the Vercel production domain and its preview deployments.
+4. Sign in and connect a model provider (Anthropic, an OpenAI-compatible API, or an Ollama server reachable from Render) and GitHub in **Settings → Integrations**. The env fallback is off in production.
+
+The Starter plan runs the API. Scanning real repositories with Semgrep and Trivy needs the Standard plan (2 GB) or more.
 
 ## ⚙️ Configuration
 

@@ -258,3 +258,34 @@ async def test_auto_investigate_scan_is_gated(client):
     repo = (await client.post("/api/v1/repositories", headers=h, json={"provider": "local", "local_path": "vulnerable-app"})).json()
     r = await client.post("/api/v1/scans", headers=h, json={"repository_id": repo["id"], "auto_investigate": True})
     assert r.status_code == 409 and r.json()["detail"]["integration"] == "model_provider"
+
+
+async def test_job_modules_import_standalone():
+    """RQ workers import job functions by dotted path in a fresh process, without app.main loaded first."""
+    import subprocess
+    import sys
+
+    for mod in ("app.agents.service", "app.evals.engine", "app.services.ai_security", "app.services.scan_service",
+                "app.services.remediation_service", "app.integrations.registry"):
+        r = subprocess.run([sys.executable, "-c", f"import {mod}"], capture_output=True, text=True, cwd=str(__import__("pathlib").Path(__file__).resolve().parents[1]))
+        assert r.returncode == 0, f"{mod}: {r.stderr[-400:]}"
+
+
+async def test_production_settings_guards(monkeypatch):
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "DEMO_ADMIN_PASSWORD", "trace-admin")
+    assert settings.demo_admin_password_ok is False
+    monkeypatch.setattr(settings, "DEMO_ADMIN_PASSWORD", "short")
+    assert settings.demo_admin_password_ok is False
+    monkeypatch.setattr(settings, "DEMO_ADMIN_PASSWORD", "a-much-longer-passphrase")
+    assert settings.demo_admin_password_ok is True
+    monkeypatch.setattr(settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(settings, "DEMO_ADMIN_PASSWORD", "trace-admin")
+    assert settings.demo_admin_password_ok is True
+
+
+async def test_cors_allows_configured_preview_regex(client):
+    from app.main import app as asgi_app
+
+    cors = next(m for m in asgi_app.user_middleware if m.cls.__name__ == "CORSMiddleware")
+    assert "allow_origin_regex" in cors.kwargs
