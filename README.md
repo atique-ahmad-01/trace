@@ -149,7 +149,7 @@ The Next.js frontend runs on **Vercel**. The API runs on **Render**, because sca
 
 1. **Backend:** in Render, choose **New → Blueprint** and pick this repository. [`render.yaml`](render.yaml) creates the `trace-api` Docker service (from `backend/Dockerfile`) and a PostgreSQL 16 database. When prompted, set `DEMO_ADMIN_PASSWORD` to a strong password (12+ characters). In production the default password is refused and seeding is skipped.
 2. **Frontend:** a Vercel project with **Root Directory** `frontend`, connected to this repository. Set `NEXT_PUBLIC_API_URL` to the Render service URL. Pushes to `main` deploy to production; other branches get preview URLs.
-3. **CORS:** `CORS_ORIGINS` and `CORS_ORIGIN_REGEX` in `render.yaml` allow the Vercel production domain and its preview deployments.
+3. **CORS:** `CORS_ORIGINS` and `CORS_ORIGIN_REGEX` in `render.yaml` allow the Vercel production domain (`https://trace-psi-gules.vercel.app`) and its preview deployments.
 4. Sign in and connect a model provider (Anthropic, an OpenAI-compatible API, or an Ollama server reachable from Render) and GitHub in **Settings → Integrations**. The env fallback is off in production.
 
 The Starter plan runs the API. Scanning real repositories with Semgrep and Trivy needs the Standard plan (2 GB) or more.
