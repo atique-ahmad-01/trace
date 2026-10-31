@@ -1,0 +1,23 @@
+name: Keep API warm
+
+# Pings the production API so a sleeping Render instance is already up when a visitor opens the
+# demo. GitHub runs scheduled jobs on a best-effort basis (delays of a few minutes are normal).
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping /health
+        run: |
+          for i in 1 2 3; do
+            if curl -fsS -m 90 https://trace-api.onrender.com/health; then exit 0; fi
+            sleep 20
+          done
+          echo "::warning::trace-api did not answer /health"

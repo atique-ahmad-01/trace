@@ -152,7 +152,7 @@ The Next.js frontend runs on **Vercel**. The API runs on **Render**, because sca
 3. **CORS:** `CORS_ORIGINS` and `CORS_ORIGIN_REGEX` in `render.yaml` allow the Vercel production domain (`https://trace-psi-gules.vercel.app`) and its preview deployments.
 4. Sign in and connect a model provider (Anthropic, an OpenAI-compatible API, or an Ollama server reachable from Render) and GitHub in **Settings → Integrations**. The env fallback is off in production.
 
-The Starter plan runs the API. Scanning real repositories with Semgrep and Trivy needs the Standard plan (2 GB) or more.
+The Blueprint uses Render's free plans, which run the public demo: visitors browse the seeded demo scan read-only, the API sleeps after 15 minutes idle (the login page wakes it), and the free database is deleted after 30 days (switch `trace-db` to `basic-256mb` to keep it). Scanning real repositories with Semgrep and Trivy needs the Standard plan (2 GB) or more.
 
 ## ⚙️ Configuration
 

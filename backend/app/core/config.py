@@ -136,6 +136,9 @@ class Settings(BaseSettings):
     SEED_DEMO_DATA: bool = True
     DEMO_ADMIN_EMAIL: str = "admin@trace.example"
     DEMO_ADMIN_PASSWORD: str = "trace-admin"
+    # New sign-ups also join the seeded "TRACE Demo" organization as read-only viewers, so a public
+    # demo shows real scan results without running a scan per visitor.
+    DEMO_VIEWER_ON_REGISTER: bool = True
 
     @field_validator("CORS_ORIGINS", "ALLOWED_HOSTS", mode="before")
     @classmethod

@@ -5,7 +5,7 @@ import { LogOut, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useAuth } from '@/components/providers'
-import { api } from '@/lib/api'
+import { api, session } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 function ServiceDot({ ok, label, detail }: { ok: boolean | null; label: string; detail: string }) {
@@ -53,9 +53,27 @@ export function Header() {
         <div className="flex items-center gap-3 border-l pl-4">
           <div className="hidden text-right leading-tight sm:block">
             <p className="text-xs font-medium">{me?.user.full_name || me?.user.email}</p>
-            <p className="text-[11px] text-muted-foreground">
-              {org?.name} · {org?.role}
-            </p>
+            {me && me.organizations.length > 1 ? (
+              <select
+                aria-label="Switch organization"
+                value={orgId ?? ''}
+                onChange={(e) => {
+                  session.setOrg(e.target.value)
+                  window.location.reload()
+                }}
+                className="max-w-[220px] cursor-pointer bg-transparent text-right text-[11px] text-muted-foreground hover:text-foreground focus-visible:outline-none"
+              >
+                {me.organizations.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name} · {o.role}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                {org?.name} · {org?.role}
+              </p>
+            )}
           </div>
           <button onClick={logout} className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Sign out" title="Sign out">
             <LogOut className="h-4 w-4" />
