@@ -65,7 +65,11 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting TRACE {settings.APP_VERSION} ({settings.ENVIRONMENT}, db={'sqlite' if settings.is_sqlite else 'postgresql'})")
     if settings.ENVIRONMENT == "production" and (settings.SECRET_KEY.startswith("dev-insecure") or settings.JWT_SECRET_KEY.startswith("dev-insecure")):
         raise RuntimeError("SECRET_KEY / JWT_SECRET_KEY must be set in production")
-    if settings.ENVIRONMENT != "test":
+    if settings.SERVERLESS:
+        # Every cold start would race to migrate and seed; run them out of band instead
+        # (scripts/prepare_hosted_db.sh).
+        logger.info("Serverless mode: skipping startup migrations, job recovery and seeding")
+    elif settings.ENVIRONMENT != "test":
         await asyncio.to_thread(run_migrations)
         await recover_interrupted_jobs()
         if settings.SEED_DEMO_DATA and not settings.demo_admin_password_ok:

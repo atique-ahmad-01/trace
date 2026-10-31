@@ -80,6 +80,13 @@ def enqueue(path: str, *args: Any) -> None:
     args = tuple(str(a) if not isinstance(a, (int, float, bool, type(None), dict, list)) else a for a in args)
     if settings.ENVIRONMENT == "test":
         return  # tests invoke job coroutines directly
+    if settings.SERVERLESS and not _redis_available():
+        # A function instance stops when the response is sent, so work cannot continue in the
+        # background. The caller's transaction is rolled back, leaving no orphaned PENDING rows.
+        from fastapi import HTTPException
+
+        raise HTTPException(503, "Scans and other background jobs are disabled on this hosted demo. "
+                                 "Run TRACE locally or on a container host to use them.")
     if _redis_available():
         import redis
         from rq import Queue
