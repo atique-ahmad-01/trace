@@ -15,9 +15,12 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Ping /health
+        env:
+          # Repository variable (Settings -> Secrets and variables -> Actions -> Variables).
+          API_URL: ${{ vars.API_URL || 'https://trace-api.onrender.com' }}
         run: |
           for i in 1 2 3; do
-            if curl -fsS -m 90 https://trace-api.onrender.com/health; then exit 0; fi
+            if curl -fsS -m 90 "$API_URL/health"; then exit 0; fi
             sleep 20
           done
           echo "::warning::trace-api did not answer /health"
