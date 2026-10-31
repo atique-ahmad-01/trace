@@ -5,11 +5,12 @@ All configuration is environment-driven. Defaults are suitable for local
 development (SQLite, in-process jobs, embedded Qdrant, local Ollama).
 """
 
+import os
 from pathlib import Path
 from typing import List, Optional
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from typing_extensions import Annotated
 
@@ -30,6 +31,10 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
+    # Serverless hosting (on by default on Vercel): no startup migrations or seeding (run them
+    # out of band), no background jobs (scans and other async work return 503), no connection
+    # pool, and scratch paths under /tmp.
+    SERVERLESS: bool = bool(os.environ.get("VERCEL"))
 
     # Security
     SECRET_KEY: str = "dev-insecure-secret-change-me"
@@ -157,6 +162,15 @@ class Settings(BaseSettings):
                 if v.startswith(prefix):
                     return "postgresql+asyncpg://" + v[len(prefix):]
         return v
+
+    @model_validator(mode="after")
+    def _serverless_paths(self):
+        # The deployment bundle is read-only on serverless hosts; only /tmp is writable.
+        if self.SERVERLESS:
+            for field, sub in (("WORK_DIR", "work"), ("QDRANT_PATH", "qdrant")):
+                if getattr(self, field).startswith(str(BACKEND_DIR)):
+                    setattr(self, field, f"/tmp/trace/{sub}")
+        return self
 
     @property
     def demo_admin_password_ok(self) -> bool:
