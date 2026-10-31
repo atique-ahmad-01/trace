@@ -42,7 +42,7 @@ TRACE scans repositories with real security scanners, normalizes and deduplicate
   <sub><b><a href="docs/demo-video/trace-demo.mp4">▶ Watch the 2-minute demo</a></b> · <a href="docs/demo-video/trace-demo-30s.mp4">30-second cut</a> · <a href="docs/demo-video/trace-architecture.mp4">Architecture animation</a></sub>
 </p>
 
-Narrated walkthrough of the real product: a scan with four scanners, live vulnerability intelligence, a LangGraph AI investigation with cited evidence, and a human-approved fix verified by re-scanning. Every screen and number comes from a real run.
+Narrated walkthrough of the real product: connecting the model provider and GitHub in Settings → Integrations, a scan with four scanners, live vulnerability intelligence, a LangGraph AI investigation with cited evidence, and a human-approved fix verified by re-scanning. Every screen and number comes from a real run.
 
 ## ✨ Features
 
