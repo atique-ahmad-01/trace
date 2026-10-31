@@ -1,24 +1,42 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { KeyRound, Trash2, UserPlus } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
+import { IntegrationsPanel } from '@/components/integrations-panel'
 import { useAuth } from '@/components/providers'
 import { Badge, Button, Card, CardBody, CardHeader, EmptyState, ErrorState, Input, KV, Label, Notice, PageHeader, Pagination, Select, Skeleton, StatusBadge, THead, Table, Tabs, Td, Th, Tr } from '@/components/ui'
 import { api, qs, type Paged } from '@/lib/api'
 import { ago } from '@/lib/utils'
 
 export default function SettingsPage() {
+  return (
+    <Suspense fallback={<Skeleton className="h-64" />}>
+      <Settings />
+    </Suspense>
+  )
+}
+
+function Settings() {
   const { role } = useAuth()
   const isAdmin = role === 'admin' || role === 'owner'
-  const [tab, setTab] = useState('system')
+  const params = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const tabs = [{ value: 'integrations', label: 'Integrations' }, { value: 'system', label: 'System status' }, { value: 'org', label: 'Organization' },
+                ...(isAdmin ? [{ value: 'audit', label: 'Audit log' }] : [])]
+  const requested = params.get('tab')
+  const tab = tabs.some((t) => t.value === requested) ? requested! : 'integrations'
+  // Tab lives in the URL so "Set up now" prompts can deep-link here and come back.
+  const setTab = (t: string) => router.replace(`${pathname}?tab=${t}`, { scroll: false })
   return (
     <div>
-      <PageHeader title="Settings" description="Organization, credentials, service status and audit trail." />
-      <Tabs value={tab} onChange={setTab} tabs={[{ value: 'system', label: 'System status' }, { value: 'org', label: 'Organization' }, ...(isAdmin ? [{ value: 'credentials', label: 'Credentials' }, { value: 'audit', label: 'Audit log' }] : [])]} />
+      <PageHeader title="Settings" description="Integrations, organization, service status and audit trail." />
+      <Tabs value={tab} onChange={setTab} tabs={tabs} />
+      {tab === 'integrations' && <IntegrationsPanel isAdmin={isAdmin} setup={params.get('setup')} returnTo={params.get('return')} />}
       {tab === 'system' && <SystemStatus />}
       {tab === 'org' && <Org isAdmin={isAdmin} />}
-      {tab === 'credentials' && <Credentials />}
       {tab === 'audit' && <Audit />}
     </div>
   )
@@ -68,6 +86,7 @@ function SystemStatus() {
             ['Database', s.database.engine],
             ['Background jobs', `${s.jobs.backend} · running ${s.jobs.running ?? 0} · done ${s.jobs.completed ?? 0} · failed ${s.jobs.failed ?? 0}`],
             ['GitHub App', s.github.app_configured ? 'configured' : 'not configured'],
+            ['GitHub token', s.github.token_configured ? `configured (${s.github.token_source === 'environment' ? 'server env' : 'organization'})` : 'not configured'],
             ['Webhook secret', s.github.webhook_secret_configured ? 'configured' : 'not configured (webhooks rejected)'],
             ['Intel sync', s.intel_sync.map((x: any) => `${x.source}: ${x.status} ${x.last_synced_at ? ago(x.last_synced_at) : ''}`).join(' · ') || 'not synced yet'],
             ['Langfuse tracing', s.observability.langfuse ? 'enabled' : 'disabled'],
@@ -114,41 +133,6 @@ function Org({ isAdmin }: { isAdmin: boolean }) {
   )
 }
 
-function Credentials() {
-  const qc = useQueryClient()
-  const [value, setValue] = useState('')
-  const q = useQuery<any[]>({ queryKey: ['credentials'], queryFn: () => api.get('/organizations/current/credentials') })
-  const save = useMutation({ mutationFn: () => api.put('/organizations/current/credentials', { kind: 'github_token', name: 'default', value }), onSuccess: () => { setValue(''); qc.invalidateQueries({ queryKey: ['credentials'] }) } })
-  const del = useMutation({ mutationFn: (id: string) => api.del(`/organizations/current/credentials/${id}`), onSuccess: () => qc.invalidateQueries({ queryKey: ['credentials'] }) })
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card>
-        <CardHeader title="GitHub token" description="Used for private repository access, branch listing and pull requests when no GitHub App installation is linked." />
-        <CardBody className="space-y-3">
-          <Notice>Tokens are encrypted at rest (Fernet) and never returned by the API — only the last 4 characters are shown. Use a fine-grained token with Contents (read/write) and Pull requests (write) on selected repositories.</Notice>
-          <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); save.mutate() }}>
-            <div className="flex-1"><Label>Token</Label><Input type="password" autoComplete="off" value={value} onChange={(e) => setValue(e.target.value)} placeholder="github_pat_…" /></div>
-            <Button type="submit" className="self-end" loading={save.isPending} disabled={value.length < 8}><KeyRound /> Save</Button>
-          </form>
-          {save.error ? <ErrorState error={save.error} /> : null}
-        </CardBody>
-      </Card>
-      <Card>
-        <CardHeader title="Stored credentials" />
-        {q.data?.length ? (
-          <ul className="divide-y text-sm">
-            {q.data.map((c) => (
-              <li key={c.id} className="flex items-center justify-between px-5 py-2.5">
-                <span>{c.kind} / {c.name} <span className="font-mono text-xs text-muted-foreground">••••{c.last4}</span> <span className="text-xs text-muted-foreground">· updated {ago(c.updated_at)}</span></span>
-                <Button size="icon" variant="ghost" aria-label="Delete credential" onClick={() => del.mutate(c.id)}><Trash2 /></Button>
-              </li>
-            ))}
-          </ul>
-        ) : <EmptyState title="No credentials stored" />}
-      </Card>
-    </div>
-  )
-}
 
 function Audit() {
   const [page, setPage] = useState(1)
@@ -156,7 +140,7 @@ function Audit() {
   const q = useQuery<Paged<any>>({ queryKey: ['audit', page, action], queryFn: () => api.get(`/organizations/current/audit${qs({ page, action })}`) })
   return (
     <Card>
-      <CardHeader title="Audit trail" description="Every security-sensitive action: logins, scans, status changes, approvals, PRs, tool permissions and executions." action={<Select value={action} onChange={(v) => { setAction(v); setPage(1) }} placeholder="All actions" className="h-8 text-xs" options={['auth', 'scan', 'finding', 'investigation', 'remediation', 'mcp', 'credential', 'repository', 'report', 'webhook'].map((a) => ({ value: a, label: a }))} />} />
+      <CardHeader title="Audit trail" description="Every security-sensitive action: logins, scans, status changes, approvals, PRs, tool permissions and executions." action={<Select value={action} onChange={(v) => { setAction(v); setPage(1) }} placeholder="All actions" className="h-8 text-xs" options={['integration', 'auth', 'scan', 'finding', 'investigation', 'remediation', 'mcp', 'credential', 'repository', 'report', 'webhook'].map((a) => ({ value: a, label: a }))} />} />
       {q.data?.items.length ? (
         <>
           <Table>

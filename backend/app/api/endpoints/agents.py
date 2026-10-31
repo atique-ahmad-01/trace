@@ -12,7 +12,7 @@ from app.api.common import Page, get_owned, paginate, ser
 from app.core.database import get_db
 from app.core.deps import OrgContext, get_org_context
 from app.db.models import AgentEvent, AgentInvestigation, Finding, MCPToolExecution, Repository
-from app.llm.provider import get_provider
+from app.integrations.registry import resolve_provider
 
 router = APIRouter()
 
@@ -31,8 +31,8 @@ AGENTS = [
 
 
 @router.get("/catalog")
-async def catalog(ctx: OrgContext = Depends(get_org_context)):
-    p = get_provider()
+async def catalog(ctx: OrgContext = Depends(get_org_context), db: AsyncSession = Depends(get_db)):
+    p = await resolve_provider(db, ctx.org_id)
     return {"agents": AGENTS, "graph": ["START", "supervisor", *SPECIALISTS, "finalize", "END"], "provider": await p.health()}
 
 

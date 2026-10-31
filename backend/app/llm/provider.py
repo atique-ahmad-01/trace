@@ -6,8 +6,12 @@ All providers return LLMResult with token usage and latency. `complete_json` req
 structured JSON output and validates it parses.
 
 Data governance: hosted providers (anthropic, or an openai_compatible endpoint flagged
-hosted) never receive repository source code unless ALLOW_SOURCE_TO_HOSTED_LLM=true;
-callers check `provider.may_receive_source`.
+hosted) never receive repository source code unless the org's model integration (or
+ALLOW_SOURCE_TO_HOSTED_LLM for env-configured providers) allows it; callers check
+`provider.may_receive_source`.
+
+Org-configured providers are built by app.integrations.registry.resolve_provider; get_provider
+builds one from environment settings only.
 """
 
 import base64
@@ -46,10 +50,13 @@ class BaseProvider:
 
     def __init__(self, model: Optional[str] = None):
         self.model = model or ""
+        self.allow_source: Optional[bool] = None  # None -> ALLOW_SOURCE_TO_HOSTED_LLM
+        self.tracing: Optional[Dict[str, str]] = None  # Langfuse {public_key, secret_key, host}; None -> env
 
     @property
     def may_receive_source(self) -> bool:
-        return not self.hosted or settings.ALLOW_SOURCE_TO_HOSTED_LLM
+        allow = settings.ALLOW_SOURCE_TO_HOSTED_LLM if self.allow_source is None else self.allow_source
+        return not self.hosted or allow
 
     async def chat(self, messages: List[Dict[str, str]], *, json_mode: bool = False, temperature: Optional[float] = None,
                    max_tokens: Optional[int] = None) -> LLMResult:
@@ -171,9 +178,16 @@ class OpenAICompatibleProvider(BaseProvider):
         try:
             async with httpx.AsyncClient(timeout=5) as c:
                 r = await c.get(f"{self.base_url}/models", headers={"Authorization": f"Bearer {self.api_key}"} if self.api_key else {})
-            return {"provider": self.name, "status": "ok" if r.status_code < 400 else f"http_{r.status_code}", "model": self.model, "hosted": self.hosted}
         except Exception as e:  # noqa: BLE001
-            return {"provider": self.name, "status": "unreachable", "error": type(e).__name__, "hosted": self.hosted}
+            return {"provider": self.name, "status": "unreachable", "model": self.model, "error": type(e).__name__, "hosted": self.hosted}
+        if r.status_code >= 400:
+            return {"provider": self.name, "status": f"http_{r.status_code}", "model": self.model, "hosted": self.hosted}
+        try:
+            models = [m["id"] for m in r.json().get("data", []) if m.get("id")]
+        except (ValueError, AttributeError, TypeError):
+            models = []
+        status = "model_missing" if models and self.model not in models else "ok"
+        return {"provider": self.name, "status": status, "model": self.model, "available_models": models, "hosted": self.hosted}
 
 
 class AnthropicProvider(BaseProvider):
@@ -209,7 +223,21 @@ class AnthropicProvider(BaseProvider):
                          tokens_out=u.get("output_tokens", 0), latency_ms=int((time.monotonic() - t) * 1000))
 
     async def health(self):
-        return {"provider": self.name, "status": "configured" if self.api_key else "not_configured", "model": self.model, "hosted": True}
+        if not self.api_key:
+            return {"provider": self.name, "status": "not_configured", "model": self.model, "hosted": True}
+        try:
+            async with httpx.AsyncClient(timeout=10) as c:
+                r = await c.get("https://api.anthropic.com/v1/models", params={"limit": 100},
+                                headers={"x-api-key": self.api_key, "anthropic-version": "2023-06-01"})
+        except Exception as e:  # noqa: BLE001
+            return {"provider": self.name, "status": "unreachable", "model": self.model, "error": type(e).__name__, "hosted": True}
+        if r.status_code in (401, 403):
+            return {"provider": self.name, "status": "invalid_api_key", "model": self.model, "hosted": True}
+        if r.status_code >= 400:
+            return {"provider": self.name, "status": f"http_{r.status_code}", "model": self.model, "hosted": True}
+        models = [m["id"] for m in r.json().get("data", []) if m.get("id")]
+        status = "model_missing" if models and self.model not in models else "ok"
+        return {"provider": self.name, "status": status, "model": self.model, "available_models": models, "hosted": True}
 
 
 class NoneProvider(BaseProvider):
@@ -247,16 +275,19 @@ def estimate_cost(model: str, tokens_in: int, tokens_out: int) -> Optional[float
 
 def _trace(provider: BaseProvider, messages, res: LLMResult) -> None:
     """Send a generation to Langfuse when configured (fire-and-forget, metadata only for hosted safety)."""
-    if not (settings.LANGFUSE_PUBLIC_KEY and settings.LANGFUSE_SECRET_KEY):
+    cfg = provider.tracing
+    if cfg is None and settings.env_integrations_enabled:
+        cfg = {"public_key": settings.LANGFUSE_PUBLIC_KEY, "secret_key": settings.LANGFUSE_SECRET_KEY, "host": settings.LANGFUSE_HOST}
+    if not (cfg and cfg.get("public_key") and cfg.get("secret_key")):
         return
     try:
-        auth = base64.b64encode(f"{settings.LANGFUSE_PUBLIC_KEY}:{settings.LANGFUSE_SECRET_KEY}".encode()).decode()
+        auth = base64.b64encode(f"{cfg['public_key']}:{cfg['secret_key']}".encode()).decode()
         now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         event = {"id": str(uuid.uuid4()), "type": "generation-create", "timestamp": now,
                  "body": {"id": str(uuid.uuid4()), "name": "trace-llm", "model": res.model, "startTime": now,
                           "usage": {"input": res.tokens_in, "output": res.tokens_out},
                           "metadata": {"provider": res.provider, "latency_ms": res.latency_ms}}}
-        httpx.post(f"{settings.LANGFUSE_HOST}/api/public/ingestion", json={"batch": [event]},
+        httpx.post(f"{(cfg.get('host') or settings.LANGFUSE_HOST).rstrip('/')}/api/public/ingestion", json={"batch": [event]},
                    headers={"Authorization": f"Basic {auth}"}, timeout=3)
     except Exception as e:  # noqa: BLE001
         logger.debug(f"langfuse trace failed: {e}")

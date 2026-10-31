@@ -13,6 +13,7 @@ from app.api.endpoints import (
     dashboard,
     evaluations,
     findings,
+    integrations,
     mcp,
     organizations,
     rag,
@@ -29,6 +30,7 @@ api_router = APIRouter()
 
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(organizations.router, prefix="/organizations", tags=["Organizations"])
+api_router.include_router(integrations.router, prefix="/integrations", tags=["Integrations"])
 api_router.include_router(repositories.router, prefix="/repositories", tags=["Repositories & GitHub"])
 api_router.include_router(scans.router, prefix="/scans", tags=["Scans"])
 api_router.include_router(findings.router, prefix="/findings", tags=["Findings"])

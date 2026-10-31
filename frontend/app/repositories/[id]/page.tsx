@@ -10,6 +10,7 @@ import { useAuth } from '@/components/providers'
 import { VulnerabilityTrends } from '@/components/dashboard/vulnerability-trends'
 import { Badge, Button, Card, CardBody, CardHeader, Checkbox, DemoBadge, EmptyState, ErrorState, ExtLink, KV, Modal, PageHeader, Select, Skeleton, StatusBadge, THead, Table, Td, Th, Tr } from '@/components/ui'
 import { api, download } from '@/lib/api'
+import { useRequireIntegration } from '@/lib/integrations'
 import { ago, formatDate, shortSha } from '@/lib/utils'
 
 const SCANNERS = ['trivy', 'osv-scanner', 'semgrep', 'gitleaks']
@@ -145,6 +146,7 @@ function ScanModal({ open, onClose, repo }: { open: boolean; onClose: () => void
   const [scanners, setScanners] = useState<string[]>(SCANNERS)
   const [branch, setBranch] = useState('')
   const [auto, setAuto] = useState(false)
+  const llm = useRequireIntegration('model_provider')
   const branches = useQuery<any[]>({ queryKey: ['branches', repo.id], queryFn: () => api.get(`/repositories/${repo.id}/branches`), enabled: open && repo.provider === 'github' })
   const status = useQuery<any[]>({ queryKey: ['scanners'], queryFn: () => api.get('/scans/scanners'), enabled: open })
   const run = useMutation({
@@ -163,7 +165,7 @@ function ScanModal({ open, onClose, repo }: { open: boolean; onClose: () => void
       footer={
         <>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => run.mutate()} loading={run.isPending} disabled={!scanners.length}>
+          <Button onClick={auto ? llm.guard(() => run.mutate()) : () => run.mutate()} loading={run.isPending} disabled={!scanners.length}>
             <Play /> Start scan
           </Button>
         </>

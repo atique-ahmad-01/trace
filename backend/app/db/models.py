@@ -132,6 +132,27 @@ class Credential(Base, UUIDMixin, TimestampMixin):
     __table_args__ = (UniqueConstraint("organization_id", "kind", "name", name="uq_credential"),)
 
 
+class OrgIntegration(Base, UUIDMixin, TimestampMixin):
+    """External service configured from the UI (model provider, GitHub, Langfuse). One row per org and kind.
+
+    `config` holds non-secret fields; `secrets` maps field name -> {"value": Fernet token, "last4": hint}; values never leave the backend.
+    """
+
+    __tablename__ = "org_integrations"
+
+    organization_id = org_fk()
+    kind = Column(String(50), nullable=False)  # model_provider | github | langfuse
+    config = Column(JSON, default=dict, nullable=False)
+    secrets = Column(JSON, default=dict, nullable=False)
+    status = Column(String(30), default="unverified", nullable=False)  # unverified | ok | error
+    status_message = Column(Text)
+    details = Column(JSON, default=dict)  # last verification output (e.g. available models)
+    verified_at = Column(DateTime(timezone=True))
+    updated_by = Column(Uuid, ForeignKey("users.id", ondelete="SET NULL"))
+
+    __table_args__ = (UniqueConstraint("organization_id", "kind", name="uq_org_integration"),)
+
+
 class GitHubInstallation(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "github_installations"
 

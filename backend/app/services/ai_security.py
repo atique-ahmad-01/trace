@@ -27,7 +27,8 @@ from loguru import logger
 
 from app.core import database
 from app.db.models import AISecurityAssessment, AISecurityResult, Repository
-from app.llm.provider import LLMUnavailable, get_provider
+from app.integrations.registry import resolve_provider
+from app.llm.provider import BaseProvider, LLMUnavailable, get_provider
 from app.services import snapshot
 
 CODE_EXT = (".py", ".js", ".ts", ".tsx", ".jsx", ".mjs", ".java", ".go", ".rb")
@@ -210,8 +211,9 @@ def judge(probe: Dict[str, Any], output: str, canary: str) -> tuple[bool, str]:
     return False, "unknown judge"
 
 
-async def dynamic_assessment(config: Dict[str, Any], custom_probes: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
-    provider = get_provider(config.get("provider"), config.get("model"))
+async def dynamic_assessment(config: Dict[str, Any], custom_probes: Optional[List[Dict[str, Any]]] = None,
+                             provider: Optional[BaseProvider] = None) -> List[Dict[str, Any]]:
+    provider = provider or get_provider(config.get("provider"), config.get("model"))
     canary = f"RL-CANARY-{secrets.token_hex(4).upper()}"
     system = (config.get("system_prompt") or DEFAULT_SYSTEM_PROMPT).replace("{canary}", canary)
     if canary not in system:
@@ -254,7 +256,7 @@ async def run_assessment(assessment_id: str) -> None:
 
             token = await token_for_repo(db, repo)
         await db.commit()
-        cfg, ttype = dict(a.target_config or {}), a.target_type
+        cfg, ttype, org_id = dict(a.target_config or {}), a.target_type, a.organization_id
 
     try:
         if ttype == "repository":
@@ -268,7 +270,9 @@ async def run_assessment(assessment_id: str) -> None:
 
             results = await asyncio.to_thread(_work)
         else:
-            results = await dynamic_assessment(cfg, cfg.get("custom_probes"))
+            async with database.async_session_maker() as db:
+                provider = await resolve_provider(db, org_id, cfg.get("provider"), cfg.get("model"))
+            results = await dynamic_assessment(cfg, cfg.get("custom_probes"), provider)
 
         async with database.async_session_maker() as db:
             a = await db.get(AISecurityAssessment, aid)

@@ -189,6 +189,7 @@ erDiagram
     USER ||--o{ ORGANIZATION_MEMBER : joins
     ORGANIZATION ||--o{ REPOSITORY : owns
     ORGANIZATION ||--o{ CREDENTIAL : "stores (encrypted)"
+    ORGANIZATION ||--o{ ORG_INTEGRATION : "connects (model, GitHub, Langfuse)"
     ORGANIZATION ||--o{ GITHUB_INSTALLATION : links
     REPOSITORY ||--o{ SCAN : runs
     REPOSITORY ||--o{ REPOSITORY_COMMIT : tracks
@@ -253,7 +254,7 @@ trace/
 │   │   │                         reports · dashboard · system · webhooks
 │   │   ├── core/                 config · database · auth deps (RBAC) · security · logging · loop_lock
 │   │   ├── db/
-│   │   │   ├── models.py         27-table normalized schema
+│   │   │   ├── models.py         32-table normalized schema
 │   │   │   └── seed/             demo admin · org · fixture repository
 │   │   ├── scanners/             runner (sandbox) · adapters (Trivy/OSV/Semgrep/Gitleaks)
 │   │   │                         ecosystems · normalize (schema, fingerprints, dedupe)
@@ -266,11 +267,14 @@ trace/
 │   │   ├── mcp/                  MCP client · registry · permissions · execution log
 │   │   ├── mcp_servers/          trace_security: built-in MCP server (stdio)
 │   │   ├── evals/                datasets · runner · security metrics
-│   │   └── integrations/         GitHub App · tokens · branches · pull requests
-│   ├── alembic/versions/         0001 schema · 0002 rebrand data migration
+│   │   └── integrations/         registry: UI-managed per-org integrations (schema, encrypted
+│   │                             storage, live verification, provider resolution, 409 gate)
+│   │                             github: App · tokens · branches · pull requests
+│   ├── alembic/versions/         0001 schema · 0002 rebrand data migration · 0003 org integrations
 │   ├── tests/
 │   │   ├── test_units.py         parsers · dedupe · patching · risk · guards · concurrency
 │   │   ├── test_api.py           auth · org isolation · webhooks · approval gates · MCP allowlist
+│   │   ├── test_integrations.py  integration storage · verification · gating · roles · env fallback
 │   │   ├── test_e2e.py           scan → investigate → approve → verify (real scanners)
 │   │   └── fixtures/vulnerable-app/   intentionally vulnerable demo target (never deploy)
 │   ├── requirements.txt
@@ -280,8 +284,10 @@ trace/
 │   │                             intelligence · ai-security · mcp · remediation · evaluations
 │   │                             reports · settings · login
 │   ├── components/               ui primitives · app shell · findings table · investigation view
+│   │                             integrations panel · "set up first" prompt and banner
 │   │   └── dashboard/            charts · posture gauge · lists
-│   ├── lib/                      API client (auth, org header, downloads) · utils
+│   ├── lib/                      API client (auth, org header, downloads, integration_required
+│   │                             interception) · integrations hooks · utils
 │   └── Dockerfile                standalone build · non-root user
 ├── docs/
 │   ├── ARCHITECTURE.md           this document

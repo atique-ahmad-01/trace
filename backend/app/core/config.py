@@ -61,6 +61,11 @@ class Settings(BaseSettings):
     GITHUB_TOKEN: Optional[str] = None  # optional PAT for public API rate limits / advisories
     GITHUB_API_URL: str = "https://api.github.com"
 
+    # Integrations (model provider, GitHub token, Langfuse) are configured per organization in
+    # Settings -> Integrations. The env values below act as a fallback for orgs that have not
+    # configured one. Unset => fallback on everywhere except ENVIRONMENT=production.
+    INTEGRATIONS_ENV_FALLBACK: Optional[bool] = None
+
     # Model providers
     MODEL_PROVIDER: str = "ollama"  # ollama | openai_compatible | anthropic | none
     OLLAMA_BASE_URL: str = "http://localhost:11434"
@@ -136,6 +141,12 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return [p.strip() for p in v.split(",") if p.strip()]
         return v
+
+    @property
+    def env_integrations_enabled(self) -> bool:
+        if self.INTEGRATIONS_ENV_FALLBACK is not None:
+            return self.INTEGRATIONS_ENV_FALLBACK
+        return self.ENVIRONMENT != "production"
 
     @property
     def is_sqlite(self) -> bool:

@@ -7,6 +7,7 @@ import { Bot, Download, ExternalLink } from 'lucide-react'
 import { InvestigationResult, Timeline } from '@/components/investigation-view'
 import { Badge, Button, Card, CardBody, CardHeader, CodeBlock, DemoBadge, EmptyState, ErrorState, ExtLink, KV, Label, Modal, Notice, PageHeader, Select, SeverityBadge, Skeleton, StatusBadge, Tabs, Textarea } from '@/components/ui'
 import { api, download } from '@/lib/api'
+import { useRequireIntegration } from '@/lib/integrations'
 import { ago, formatDate, shortSha, titleCase } from '@/lib/utils'
 
 export default function FindingPage({ params }: { params: { id: string } }) {
@@ -22,6 +23,7 @@ export default function FindingPage({ params }: { params: { id: string } }) {
     enabled: !!latestId,
     refetchInterval: (q) => (['queued', 'running'].includes((q.state.data as any)?.status) ? 2500 : false),
   })
+  const llm = useRequireIntegration('model_provider')
   const investigate = useMutation({
     mutationFn: () => api.post(`/findings/${params.id}/investigate`, { mode }),
     onSuccess: () => {
@@ -66,7 +68,7 @@ export default function FindingPage({ params }: { params: { id: string } }) {
             </Button>
             <Button variant="outline" onClick={() => setStatusOpen(true)}>Change status</Button>
             <Select value={mode} onChange={setMode} aria-label="Investigation mode" className="h-9 text-xs" options={[{ value: 'agentic_rag', label: 'Agentic RAG (tools + retrieval)' }, { value: 'rag', label: 'RAG only' }, { value: 'base', label: 'Base model' }]} />
-            <Button onClick={() => investigate.mutate()} loading={investigate.isPending} disabled={!!running}>
+            <Button onClick={llm.guard(() => investigate.mutate())} loading={investigate.isPending} disabled={!!running}>
               <Bot /> {running ? 'Investigating…' : 'Investigate with AI'}
             </Button>
           </>
@@ -186,7 +188,7 @@ export default function FindingPage({ params }: { params: { id: string } }) {
       {tab === 'investigation' &&
         (!latestId ? (
           <Card>
-            <EmptyState icon={Bot} title="No AI investigation yet" description="The supervisor coordinates research, code analysis, risk assessment and remediation agents. Every claim is linked to evidence." action={<Button onClick={() => investigate.mutate()} loading={investigate.isPending}>Start investigation</Button>} />
+            <EmptyState icon={Bot} title="No AI investigation yet" description="The supervisor coordinates research, code analysis, risk assessment and remediation agents. Every claim is linked to evidence." action={<Button onClick={llm.guard(() => investigate.mutate())} loading={investigate.isPending}>Start investigation</Button>} />
           </Card>
         ) : inv.data ? (
           <div className="grid gap-4 xl:grid-cols-3">

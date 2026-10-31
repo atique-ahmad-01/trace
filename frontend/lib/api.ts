@@ -27,6 +27,8 @@ export const session = {
   setOrg: (o: string | null) => safeSet(ORG_KEY, o),
 }
 
+export const INTEGRATION_REQUIRED_EVENT = 'trace:integration-required'
+
 export class ApiError extends Error {
   status: number
   detail: unknown
@@ -48,6 +50,7 @@ function headers(extra?: HeadersInit): HeadersInit {
 
 function messageFrom(detail: unknown, fallback: string): string {
   if (typeof detail === 'string') return detail
+  if (detail && typeof detail === 'object' && typeof (detail as any).message === 'string') return (detail as any).message
   if (Array.isArray(detail)) return detail.map((d: any) => `${(d.loc || []).slice(1).join('.')}: ${d.msg}`).join('; ')
   return fallback
 }
@@ -70,6 +73,10 @@ async function request<T>(method: string, path: string, body?: unknown, init?: R
       detail = (await res.json()).detail
     } catch {
       /* non-JSON error */
+    }
+    // A feature needs an integration the org has not set up: the app shell opens the setup prompt.
+    if (res.status === 409 && (detail as any)?.code === 'integration_required' && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(INTEGRATION_REQUIRED_EVENT, { detail }))
     }
     throw new ApiError(res.status, messageFrom(detail, `${res.status} ${res.statusText}`), detail)
   }

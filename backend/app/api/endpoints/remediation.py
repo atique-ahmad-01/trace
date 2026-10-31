@@ -97,6 +97,8 @@ async def pull_request(pid: uuid.UUID, ctx: OrgContext = Depends(require_role("a
         res = await open_pull_request(db, p, ctx.user)
     except RemediationError as e:
         raise HTTPException(422, str(e))
+    except HTTPException:
+        raise  # e.g. integration_required -> setup prompt in the UI
     except Exception as e:  # noqa: BLE001
         raise HTTPException(502, f"GitHub error: {e}")
     await audit(db, "remediation.pull_request", org_id=ctx.org_id, user=ctx.user, resource_type="remediation_proposal", resource_id=p.id, details=res)

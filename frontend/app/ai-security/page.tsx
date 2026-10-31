@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, ShieldCheck } from 'lucide-react'
 import { Badge, Button, Card, CardBody, CardHeader, EmptyState, ErrorState, Input, Label, Modal, Notice, PageHeader, Pagination, Select, Skeleton, StatusBadge, THead, Table, Td, Textarea, Th, Tr } from '@/components/ui'
 import { api, qs, type Paged } from '@/lib/api'
+import { useRequireIntegration } from '@/lib/integrations'
 import { ago, titleCase } from '@/lib/utils'
 
 export default function AISecurityPage() {
@@ -75,16 +76,16 @@ function NewAssessment({ open, onClose }: { open: boolean; onClose: () => void }
   const [type, setType] = useState('repository')
   const [name, setName] = useState('')
   const [repo, setRepo] = useState('')
-  const [provider, setProvider] = useState('ollama')
+  const llm = useRequireIntegration('model_provider')
   const [model, setModel] = useState('')
   const [system, setSystem] = useState('')
   const repos = useQuery({ queryKey: ['repositories'], queryFn: () => api.get('/repositories?page_size=100'), enabled: open })
   const m = useMutation({
-    mutationFn: () => api.post('/ai-security/assessments', type === 'repository' ? { name, target_type: type, repository_id: repo } : { name, target_type: type, provider, model: model || undefined, system_prompt: system || undefined }),
+    mutationFn: () => api.post('/ai-security/assessments', type === 'repository' ? { name, target_type: type, repository_id: repo } : { name, target_type: type, model: model || undefined, system_prompt: system || undefined }),
     onSuccess: (a: any) => { qc.invalidateQueries({ queryKey: ['assessments'] }); onClose(); router.push(`/ai-security/${a.id}`) },
   })
   return (
-    <Modal open={open} onClose={onClose} title="New AI security assessment" wide footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => m.mutate()} loading={m.isPending} disabled={name.length < 3 || (type === 'repository' && !repo)}>Run assessment</Button></>}>
+    <Modal open={open} onClose={onClose} title="New AI security assessment" wide footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={type === 'llm_endpoint' ? llm.guard(() => m.mutate()) : () => m.mutate()} loading={m.isPending} disabled={name.length < 3 || (type === 'repository' && !repo)}>Run assessment</Button></>}>
       <div className="space-y-3">
         <div><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Support agent — Q4 review" /></div>
         <div>
@@ -96,14 +97,17 @@ function NewAssessment({ open, onClose }: { open: boolean; onClose: () => void }
         ) : (
           <>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Provider</Label><Select value={provider} onChange={setProvider} className="w-full" options={[{ value: 'ollama', label: 'Ollama (local)' }, { value: 'openai_compatible', label: 'OpenAI-compatible / vLLM' }, { value: 'anthropic', label: 'Anthropic' }]} /></div>
-              <div><Label hint="blank = configured default">Model</Label><Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="qwen2.5-coder:7b" /></div>
+              <div>
+                <Label>Provider</Label>
+                <p className="flex h-9 items-center text-sm">{llm.item?.ready ? llm.item.fields.find((f) => f.name === 'provider')?.options?.find((o) => o.value === llm.item?.config.provider)?.label : <span className="text-muted-foreground">Not connected — set up in Settings → Integrations</span>}</p>
+              </div>
+              <div><Label hint="blank = configured model">Model</Label><Input value={model} onChange={(e) => setModel(e.target.value)} placeholder={llm.item?.config.model || 'qwen2.5-coder:7b'} /></div>
             </div>
             <div>
               <Label hint="use {canary} where a secret should be planted; blank = default support-agent prompt">System prompt under test</Label>
               <Textarea value={system} onChange={(e) => setSystem(e.target.value)} className="min-h-[120px] font-mono text-xs" />
             </div>
-            <Notice>Probes are sent to the selected provider. Do not paste real secrets — a random canary is generated per run.</Notice>
+            <Notice>Probes are sent to your organization’s model provider. Do not paste real secrets — a random canary is generated per run.</Notice>
           </>
         )}
         {m.error ? <ErrorState error={m.error} /> : null}

@@ -21,4 +21,7 @@ Out of scope:
 - Set strong `SECRET_KEY` and `JWT_SECRET_KEY`; production startup refuses the development defaults.
 - Change `DEMO_ADMIN_PASSWORD` or set `SEED_DEMO_DATA=false` outside local development.
 - Run scanners in the provided containers (non-root, no capabilities, resource limits) for isolation; local mode only applies process limits.
-- Keep `ALLOW_SOURCE_TO_HOSTED_LLM=false` unless you have authorization to send repository code to a hosted model provider.
+- Keep `ALLOW_SOURCE_TO_HOSTED_LLM=false`, and the "Allow repository source code" switch in each org's model integration off, unless you have authorization to send repository code to a hosted model provider.
+- Set `ENCRYPTION_KEY` (a Fernet key) in production; it encrypts integration secrets. Rotating it makes stored secrets unreadable, so they must be re-entered in Settings → Integrations.
+- Leave `INTEGRATIONS_ENV_FALLBACK` unset (off in production) so organizations never silently use a server-wide model key or GitHub token.
+- Integration base URLs are fetched by the server, so an admin can point the backend at any http(s) host (local Ollama needs this). On multi-tenant deployments, restrict outbound traffic from the API container.

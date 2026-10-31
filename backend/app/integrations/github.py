@@ -3,8 +3,8 @@ GitHub integration.
 
 Authorization order for repository access:
 1. GitHub App installation token (GITHUB_APP_ID + private key, repository linked to an installation)
-2. Organization credential "github_token" (encrypted PAT stored via Settings)
-3. GITHUB_TOKEN environment variable
+2. The organization's GitHub integration (encrypted PAT set in Settings -> Integrations)
+3. A legacy "github_token" credential, then GITHUB_TOKEN when env fallback is enabled
 4. Anonymous (public repositories only)
 """
 
@@ -70,12 +70,17 @@ async def get_installation(installation_id: str) -> Dict[str, Any]:
 
 
 async def org_token(db: AsyncSession, org_id: uuid.UUID) -> Optional[str]:
+    from app.integrations import registry
+
+    r = await registry.resolve(db, org_id, "github")
+    if r.source == "organization":
+        return r.secrets.get("token") if r.ready else None
     cred = (
         await db.execute(select(Credential).where(Credential.organization_id == org_id, Credential.kind == "github_token"))
     ).scalar_one_or_none()
     if cred:
         return decrypt_secret(cred.encrypted_value)
-    return settings.GITHUB_TOKEN
+    return r.secrets.get("token")  # environment fallback, if enabled
 
 
 async def token_for_repo(db: AsyncSession, repo: Repository) -> Optional[str]:

@@ -5,8 +5,8 @@
 ## 1. What was implemented
 
 **Backend** (FastAPI, SQLAlchemy 2 async, Alembic):
-- **Data model.** 27-table normalized schema with UUID keys and org-scoped rows, covering users, organizations, members, credentials, GitHub installations, repositories, commits, scans, scanner executions, findings, vulnerability records, KEV, RAG sources/documents/chunks, MCP integrations/tools/executions, investigations, agent events, remediation proposals, approvals, verification runs, AI-security assessments/results, evaluation datasets/cases/runs/results, and the audit log. It runs on SQLite or PostgreSQL. The migration is `alembic/versions/0001`.
-- **Auth and access control.** JWT, bcrypt, roles (viewer/member/admin/owner), org isolation via `X-Organization-Id`, Fernet-encrypted credentials, rate limiting, security headers, secret-redacting logs, and an audit trail.
+- **Data model.** 32-table normalized schema with UUID keys and org-scoped rows, covering users, organizations, members, credentials, org integrations, GitHub installations, repositories, commits, scans, scanner executions, findings, vulnerability records, KEV, RAG sources/documents/chunks, MCP integrations/tools/executions, investigations, agent events, remediation proposals, approvals, verification runs, AI-security assessments/results, evaluation datasets/cases/runs/results, and the audit log. It runs on SQLite or PostgreSQL. Migrations are in `alembic/versions/` (0001 schema, 0002 rebrand, 0003 org integrations).
+- **Auth and access control.** JWT, bcrypt, roles (viewer/member/admin/owner), org isolation via `X-Organization-Id`, Fernet-encrypted credentials and integration secrets, rate limiting, security headers, secret-redacting logs, and an audit trail.
 - **Scanning.**
   - Snapshots: hook-less shallow clone with the token passed via env, or an allowed local fixture. Escaping symlinks are pruned, size is capped, and cleanup is guaranteed.
   - Ecosystems are detected from manifests and lock files.
@@ -39,7 +39,7 @@
 
 **Frontend** (Next.js 14 App Router, TypeScript, Tailwind with shadcn-style primitives, Lucide, React Query, Recharts):
 - A dark-first app shell with live service indicators and 20 routes.
-- Pages: overview dashboard, repositories (onboarding, connect, detail, scan launcher), scans and scan detail with live logs, vulnerabilities (filters) and finding detail (intel, AI investigation, timeline, evidence, remediation), investigations, intelligence (lookup, tracked records, KEV, RAG playground and ingestion), AI security, MCP (permissions, execution, logs), remediation (diff review, approval, verification, PR), evaluations (runs, comparison chart, case results), reports (PDF/JSON), and settings (status, members, credentials, audit).
+- Pages: overview dashboard, repositories (onboarding, connect, detail, scan launcher), scans and scan detail with live logs, vulnerabilities (filters) and finding detail (intel, AI investigation, timeline, evidence, remediation), investigations, intelligence (lookup, tracked records, KEV, RAG playground and ingestion), AI security, MCP (permissions, execution, logs), remediation (diff review, approval, verification, PR), evaluations (runs, comparison chart, case results), reports (PDF/JSON), and settings (integrations, status, members, audit). A global "set up first" prompt and banner appear when a feature needs an integration that is missing or failed verification.
 - Every page reads from the API. Demo data is labeled and can be filtered out.
 
 ## 2. What has been verified
@@ -91,7 +91,7 @@ Sign in as `admin@trace.example` with `DEMO_ADMIN_PASSWORD` (default `trace-admi
 
 ## 4. Required environment variables
 
-Nothing is strictly required locally; `scripts/dev-setup.sh` generates `SECRET_KEY` and `JWT_SECRET_KEY`. Production startup refuses the dev secrets. Everything else is in `.env.example`, with GitHub, model provider, Redis, Qdrant, NVD key and Langfuse as the main optional groups.
+Nothing is strictly required locally; `scripts/dev-setup.sh` generates `SECRET_KEY` and `JWT_SECRET_KEY`. Production startup refuses the dev secrets. Everything else is in `.env.example`, with GitHub App, Redis, Qdrant and NVD key as the main optional groups. The model provider, GitHub token and Langfuse are configured per organization in **Settings → Integrations**. Their environment variables are only a fallback, which is on by default in development and off when `ENVIRONMENT=production` (`INTEGRATIONS_ENV_FALLBACK` overrides).
 
 ## 5. Tests
 
@@ -107,13 +107,13 @@ cd frontend && npx tsc --noEmit && npx next lint && npx next build
 | Trivy, OSV-Scanner, Semgrep, Gitleaks | **Verified** (real runs) |
 | NVD, OSV.dev, GHSA (unauthenticated), CISA KEV | **Verified** live |
 | OWASP and MITRE CWE ingestion, Ollama embeddings, embedded Qdrant | **Verified** live |
-| Ollama chat models (agents, probes, evals) | **Verified** live (slow on this CPU) |
+| Ollama chat models (agents, probes, evals) | **Verified** live (slow on this CPU), including setup and verification through Settings → Integrations |
 | MCP built-in server (stdio) | **Verified** — discovery and tool calls from agents |
 | GitHub public repos via anonymous API / https clone | Implemented. Not yet exercised; tests use the local fixture. |
 | GitHub App (installation tokens, webhooks), private repos, PR creation | **Requires credentials** (App id + key, or a token with contents and pull-request write). The code paths are implemented; webhook signature handling is tested; nothing was run against GitHub. |
-| vLLM / OpenAI-compatible, Anthropic | **Requires endpoint or key**. Adapters implemented, not exercised. |
+| vLLM / OpenAI-compatible, Anthropic | **Requires endpoint or key**. Adapters implemented. An Anthropic key is checked live during verification (an invalid key was confirmed to be rejected); chat with a valid key was not exercised. |
 | PostgreSQL, Redis/RQ, Qdrant server, Docker Compose | Implemented, **not yet verified**: Docker was unavailable in the development environment. |
-| Langfuse | Optional; requires keys. Not exercised. |
+| Langfuse | Optional; requires keys. Configured per org in Settings → Integrations; verification is tested with mocked HTTP only. |
 | GitHub MCP server template | Requires Docker and a token. Not exercised. |
 
 ## 7. Known limitations
