@@ -1,10 +1,45 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AcronymList, AcronymTags, Logo, SUBTITLE, TAGLINE, Wordmark } from '@/components/brand'
 import { Button, ErrorState, Input, Label } from '@/components/ui'
-import { api, login } from '@/lib/api'
+import { API_URL, api, login, session } from '@/lib/api'
+
+const IS_LOCAL_API = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(API_URL)
+
+type ServerState = 'checking' | 'waking' | 'ready' | 'down'
+
+/** Pings /health as soon as the page opens, so a sleeping backend boots while the visitor types. */
+function useServerWarmup(): ServerState {
+  const [state, setState] = useState<ServerState>('checking')
+  useEffect(() => {
+    let cancelled = false
+    const slow = setTimeout(() => !cancelled && setState((s) => (s === 'checking' ? 'waking' : s)), 1500)
+    const started = Date.now()
+    async function ping() {
+      while (!cancelled && Date.now() - started < 180_000) {
+        try {
+          const res = await fetch(`${API_URL}/health`, { cache: 'no-store', signal: AbortSignal.timeout(65_000) })
+          if (res.ok) {
+            if (!cancelled) setState('ready')
+            return
+          }
+        } catch {
+          /* still booting: retry */
+        }
+        await new Promise((r) => setTimeout(r, 3000))
+      }
+      if (!cancelled) setState('down')
+    }
+    ping()
+    return () => {
+      cancelled = true
+      clearTimeout(slow)
+    }
+  }, [])
+  return state
+}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -15,13 +50,18 @@ export default function LoginPage() {
   const [org, setOrg] = useState('')
   const [error, setError] = useState<unknown>(null)
   const [loading, setLoading] = useState(false)
+  const server = useServerWarmup()
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
     try {
-      if (mode === 'register') await api.post('/auth/register', { email, password, username, organization_name: org || undefined })
+      if (mode === 'register') {
+        const res = await api.post<{ demo_organization_id?: string | null }>('/auth/register', { email, password, username, organization_name: org || undefined })
+        // Land new visitors on the populated demo organization; their own org is one switch away.
+        session.setOrg(res.demo_organization_id ?? null)
+      }
       await login(email, password)
       router.replace('/')
     } catch (err) {
@@ -90,7 +130,22 @@ export default function LoginPage() {
             </button>
           </p>
         </form>
-        <p className="mt-4 text-center text-[11px] text-muted-foreground">Local demo admin: admin@trace.example (password from DEMO_ADMIN_PASSWORD)</p>
+        {server !== 'ready' && (
+          <p role="status" className="mt-4 flex items-center justify-center gap-2 text-center text-xs text-muted-foreground">
+            {server === 'down' ? (
+              <span className="text-destructive">Server is not responding. Please try again in a few minutes.</span>
+            ) : (
+              <>
+                <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" aria-hidden />
+                {server === 'waking' ? 'Waking the server, this can take up to a minute…' : 'Connecting to server…'}
+              </>
+            )}
+          </p>
+        )}
+        {mode === 'register' && !IS_LOCAL_API && (
+          <p className="mt-4 text-center text-[11px] text-muted-foreground">New accounts get read-only access to the TRACE Demo organization with real scan results.</p>
+        )}
+        {IS_LOCAL_API && <p className="mt-4 text-center text-[11px] text-muted-foreground">Local demo admin: admin@trace.example (password from DEMO_ADMIN_PASSWORD)</p>}
         </div>
       </div>
     </div>

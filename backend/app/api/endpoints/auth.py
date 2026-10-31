@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.common import ser
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.security import create_access_token, get_password_hash, verify_password
@@ -45,8 +46,15 @@ async def register(body: RegisterIn, request: Request, db: AsyncSession = Depend
     db.add(org)
     await db.flush()
     db.add(OrganizationMember(organization_id=org.id, user_id=user.id, role="owner"))
+    demo_org_id = None
+    if settings.DEMO_VIEWER_ON_REGISTER:
+        # Read-only access to the seeded demo organization: visitors see real scan results at once.
+        demo = (await db.execute(select(Organization).where(Organization.slug == "trace-demo"))).scalar_one_or_none()
+        if demo:
+            db.add(OrganizationMember(organization_id=demo.id, user_id=user.id, role="viewer"))
+            demo_org_id = str(demo.id)
     await audit(db, "user.register", org_id=org.id, user=user, resource_type="user", resource_id=user.id, ip=request.client.host if request.client else None)
-    return {"user": _user_out(user), "organization": ser(org)}
+    return {"user": _user_out(user), "organization": ser(org), "demo_organization_id": demo_org_id}
 
 
 @router.post("/login")
@@ -64,5 +72,5 @@ async def login(request: Request, form: OAuth2PasswordRequestForm = Depends(), d
 
 @router.get("/me")
 async def me(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    rows = (await db.execute(select(OrganizationMember, Organization).join(Organization).where(OrganizationMember.user_id == user.id))).all()
+    rows = (await db.execute(select(OrganizationMember, Organization).join(Organization).where(OrganizationMember.user_id == user.id).order_by(OrganizationMember.created_at))).all()
     return {"user": _user_out(user), "organizations": [{**ser(o, include=("id", "name", "slug")), "role": m.role} for m, o in rows]}

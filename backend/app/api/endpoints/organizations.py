@@ -19,7 +19,11 @@ router = APIRouter()
 
 @router.get("/current")
 async def current(ctx: OrgContext = Depends(get_org_context), db: AsyncSession = Depends(get_db)):
-    members = (await db.execute(select(OrganizationMember, User).join(User).where(OrganizationMember.organization_id == ctx.org_id))).all()
+    q = select(OrganizationMember, User).join(User).where(OrganizationMember.organization_id == ctx.org_id)
+    if ctx.role == "viewer":
+        # Viewers (e.g. public demo visitors) see only themselves, never other members' emails.
+        q = q.where(OrganizationMember.user_id == ctx.user.id)
+    members = (await db.execute(q)).all()
     installs = (await db.execute(select(GitHubInstallation).where(GitHubInstallation.organization_id == ctx.org_id))).scalars().all()
     return {"organization": ser(ctx.org), "role": ctx.role,
             "members": [{"user_id": str(u.id), "email": u.email, "username": u.username, "role": m.role} for m, u in members],
