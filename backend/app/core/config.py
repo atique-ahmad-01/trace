@@ -7,6 +7,7 @@ development (SQLite, in-process jobs, embedded Qdrant, local Ollama).
 
 from pathlib import Path
 from typing import List, Optional
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -179,6 +180,17 @@ class Settings(BaseSettings):
         url = self.DATABASE_URL
         if url.startswith("postgresql://"):
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if url.startswith("postgresql+asyncpg://") and "?" in url:
+            # Hosted Postgres (Neon, Supabase) hands out libpq options asyncpg rejects:
+            # sslmode -> ssl, and channel_binding is dropped.
+            parts = urlsplit(url)
+            query = []
+            for k, v in parse_qsl(parts.query, keep_blank_values=True):
+                if k == "sslmode":
+                    query.append(("ssl", v))
+                elif k != "channel_binding":
+                    query.append((k, v))
+            url = urlunsplit(parts._replace(query=urlencode(query)))
         return url
 
 
