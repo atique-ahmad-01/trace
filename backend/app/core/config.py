@@ -41,6 +41,8 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: Annotated[List[str], NoDecode] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    # Optional regex for origins that cannot be listed, e.g. Vercel preview deployments.
+    CORS_ORIGIN_REGEX: Optional[str] = None
     ALLOWED_HOSTS: Annotated[List[str], NoDecode] = ["*"]
 
     # Database (sqlite+aiosqlite for local, postgresql+asyncpg in compose)
@@ -141,6 +143,23 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return [p.strip() for p in v.split(",") if p.strip()]
         return v
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def _async_driver(cls, v):
+        # Hosted Postgres (Render, Heroku, Railway) hands out postgres:// or postgresql:// URLs.
+        if isinstance(v, str):
+            for prefix in ("postgres://", "postgresql://"):
+                if v.startswith(prefix):
+                    return "postgresql+asyncpg://" + v[len(prefix):]
+        return v
+
+    @property
+    def demo_admin_password_ok(self) -> bool:
+        """Outside production anything goes; in production the seeded admin needs a real password."""
+        if self.ENVIRONMENT != "production":
+            return True
+        return len(self.DEMO_ADMIN_PASSWORD) >= 12 and self.DEMO_ADMIN_PASSWORD != "trace-admin"
 
     @property
     def env_integrations_enabled(self) -> bool:

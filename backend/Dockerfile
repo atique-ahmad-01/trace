@@ -29,5 +29,6 @@ USER trace
 
 ENV TOOLS_DIR=/usr/local/bin PYTHONUNBUFFERED=1
 EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=5s CMD curl -fs http://localhost:8000/health || exit 1
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+HEALTHCHECK --interval=30s --timeout=5s CMD curl -fs http://localhost:${PORT:-8000}/health || exit 1
+# PORT is set by hosts such as Render; 8000 otherwise.
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
