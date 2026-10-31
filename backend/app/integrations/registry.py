@@ -21,7 +21,6 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.common import iso
 from app.core.config import settings
 from app.core.security import decrypt_secret, encrypt_secret
 from app.db.models import OrgIntegration
@@ -82,6 +81,11 @@ DEFINITIONS: Dict[str, Dict[str, Any]] = {
 }
 
 KINDS = list(DEFINITIONS)
+
+
+def _iso(v: datetime) -> str:
+    # Same as app.api.common.iso; importing app.api from here would be circular (endpoints import this module).
+    return (v if v.tzinfo else v.replace(tzinfo=timezone.utc)).isoformat()
 
 
 class IntegrationRequired(HTTPException):
@@ -388,7 +392,7 @@ def serialize(r: Resolved) -> Dict[str, Any]:
         "fields": d["fields"], "source": r.source, "configured": r.source is not None, "ready": r.ready,
         "status": r.status, "status_message": r.status_message, "config": r.config, "secrets": hints,
         "details": (row.details or {}) if row else {},
-        "verified_at": iso(row.verified_at) if row and row.verified_at else None,
-        "updated_at": iso(row.updated_at) if row and row.updated_at else None,
+        "verified_at": _iso(row.verified_at) if row and row.verified_at else None,
+        "updated_at": _iso(row.updated_at) if row and row.updated_at else None,
         "env_fallback": settings.env_integrations_enabled,
     }

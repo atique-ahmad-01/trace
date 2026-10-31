@@ -63,18 +63,20 @@ async def recover_interrupted_jobs() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting TRACE {settings.APP_VERSION} ({settings.ENVIRONMENT}, db={'sqlite' if settings.is_sqlite else 'postgresql'})")
+    if settings.ENVIRONMENT == "production" and (settings.SECRET_KEY.startswith("dev-insecure") or settings.JWT_SECRET_KEY.startswith("dev-insecure")):
+        raise RuntimeError("SECRET_KEY / JWT_SECRET_KEY must be set in production")
     if settings.ENVIRONMENT != "test":
         await asyncio.to_thread(run_migrations)
         await recover_interrupted_jobs()
-        if settings.SEED_DEMO_DATA:
+        if settings.SEED_DEMO_DATA and not settings.demo_admin_password_ok:
+            logger.error("Demo seeding skipped: set DEMO_ADMIN_PASSWORD to a strong value (12+ characters, not the default) in production")
+        elif settings.SEED_DEMO_DATA:
             from app.db.seed.seed import seed
 
             try:
                 await seed()
             except Exception:  # noqa: BLE001
                 logger.exception("Seeding failed")
-    if settings.ENVIRONMENT == "production" and settings.SECRET_KEY.startswith("dev-insecure"):
-        raise RuntimeError("SECRET_KEY / JWT_SECRET_KEY must be set in production")
     yield
     logger.info("TRACE backend stopped")
 
@@ -89,7 +91,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(CORSMiddleware, allow_origins=settings.CORS_ORIGINS, allow_credentials=True, allow_methods=["*"],
+app.add_middleware(CORSMiddleware, allow_origins=settings.CORS_ORIGINS, allow_origin_regex=settings.CORS_ORIGIN_REGEX or None,
+                   allow_credentials=True, allow_methods=["*"],
                    allow_headers=["Authorization", "Content-Type", "X-Organization-Id"])
 if settings.ENVIRONMENT == "production":
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)

@@ -48,3 +48,6 @@ docker-compose.override.yml
 /docs/demo-video/*
 !/docs/demo-video/*.mp4
 !/docs/demo-video/thumbnail.png
+
+# Vercel CLI link
+.vercel/

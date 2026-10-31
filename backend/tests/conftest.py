@@ -6,7 +6,8 @@ from pathlib import Path
 _TMP = tempfile.mkdtemp(prefix="trace-test-")
 os.environ.update({
     "ENVIRONMENT": "test",
-    "DATABASE_URL": f"sqlite+aiosqlite:///{_TMP}/test.db",
+    # TEST_DATABASE_URL runs the suite on another database, e.g. PostgreSQL.
+    "DATABASE_URL": os.environ.get("TEST_DATABASE_URL") or f"sqlite+aiosqlite:///{_TMP}/test.db",
     "QDRANT_PATH": f"{_TMP}/qdrant",
     "WORK_DIR": f"{_TMP}/work",
     "EMBEDDING_PROVIDER": "none",

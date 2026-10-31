@@ -112,7 +112,9 @@ cd frontend && npx tsc --noEmit && npx next lint && npx next build
 | GitHub public repos via anonymous API / https clone | Implemented. Not yet exercised; tests use the local fixture. |
 | GitHub App (installation tokens, webhooks), private repos, PR creation | **Requires credentials** (App id + key, or a token with contents and pull-request write). The code paths are implemented; webhook signature handling is tested; nothing was run against GitHub. |
 | vLLM / OpenAI-compatible, Anthropic | **Requires endpoint or key**. Adapters implemented. An Anthropic key is checked live during verification (an invalid key was confirmed to be rejected); chat with a valid key was not exercised. |
-| PostgreSQL, Redis/RQ, Qdrant server, Docker Compose | Implemented, **not yet verified**: Docker was unavailable in the development environment. |
+| PostgreSQL | **Verified**: all migrations (0001–0003, including the GitHub-token import) and the full test suite, end-to-end test included, pass on PostgreSQL 16.2 (`TEST_DATABASE_URL=… pytest`). |
+| Redis/RQ, Qdrant server, Docker Compose | Implemented, **not yet verified**: Docker was unavailable in the development environment. Job modules are tested to import standalone, as RQ workers load them. |
+| Production deployment (Vercel frontend, Render API + PostgreSQL) | Configured (`render.yaml`, Vercel project). See the README's Production section. |
 | Langfuse | Optional; requires keys. Configured per org in Settings → Integrations; verification is tested with mocked HTTP only. |
 | GitHub MCP server template | Requires Docker and a token. Not exercised. |
 
