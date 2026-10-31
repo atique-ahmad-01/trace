@@ -128,6 +128,8 @@ On first start the backend:
 3. connects `backend/tests/fixtures/vulnerable-app` as a **DEMO** repository and scans it with the real scanners. Demo findings are labeled everywhere and can be filtered out;
 4. ingests OWASP and CWE knowledge into the RAG index in the background.
 
+Then connect a model in **Settings → Integrations** (for example Ollama at `http://localhost:11434` with `qwen2.5-coder:7b`) and click **Save & verify**. In development the model settings in `.env` are used until you do, so AI features work right away. To try the production behaviour, where everything must be set up in the UI, start the backend with `INTEGRATIONS_ENV_FALLBACK=false`. See [Integrations](#integrations-from-the-ui).
+
 ### Docker Compose
 
 ```bash
@@ -136,6 +138,8 @@ docker compose up -d --build
 docker compose exec ollama ollama pull qwen2.5-coder:7b
 docker compose exec ollama ollama pull nomic-embed-text
 ```
+
+Then connect the model in **Settings → Integrations**. Inside Compose, Ollama's base URL is `http://ollama:11434`.
 
 Compose runs PostgreSQL, Redis + an RQ worker, a Qdrant server, Ollama, the API and the frontend. Containers drop all capabilities, use `no-new-privileges` and run as a non-root user, and the worker has CPU and memory limits.
 
@@ -183,18 +187,20 @@ Infrastructure stays environment-driven. See [.env.example](.env.example) for ev
   - Repository code is never executed.
 - **Access.**
   - JWT auth and role-based access (viewer / member / admin / owner), with every query scoped to the organization.
-  - Stored tokens are encrypted with Fernet. Logs redact tokens, keys and credentials.
+  - Integration secrets (model API keys, GitHub token, Langfuse key) are encrypted with Fernet per organization and never returned by the API. Only admins can change them. Logs redact tokens, keys and credentials.
   - Rate limiting and security headers on all responses. GitHub webhook HMAC signatures are verified, and installation permissions are checked.
   - Every sensitive action is written to the audit log.
 
 ## 🧪 Tests
 
 ```bash
-cd backend && .venv/bin/python -m pytest -q                 # unit + API + end-to-end
+cd backend && .venv/bin/python -m pytest -q                 # unit + API + integrations + end-to-end
 cd frontend && npx tsc --noEmit && npx next lint && npx next build
 ```
 
-The end-to-end test runs a real scan, the LangGraph investigation, a proposal, approval and verification with a real patch and re-scan, then checks the audit trail. It replaces the LLM with `ScriptedTestProvider`, a labeled test double, and stubs intel lookups so the result is deterministic. It is skipped if the scanners aren't installed.
+The end-to-end test runs a real scan, checks that the investigation is blocked until a model provider is connected, connects one through the Integrations API, then runs the LangGraph investigation, a proposal, approval and verification with a real patch and re-scan, then checks the audit trail. It replaces the LLM with `ScriptedTestProvider`, a labeled test double, and stubs intel lookups so the result is deterministic. It is skipped if the scanners aren't installed.
+
+`tests/test_integrations.py` covers integration storage and encryption, live verification (with mocked HTTP), feature gating, roles, org isolation and the env fallback.
 
 See [docs/STATUS.md](docs/STATUS.md) for what has been verified, what still depends on credentials, and known limitations.
 
