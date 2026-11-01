@@ -15,9 +15,17 @@ MANIFESTS: Dict[str, List[str]] = {
     "docker": ["Dockerfile"],
     "terraform": [],
 }
+# Every language Semgrep can parse. A source file missing here is silently left out of SAST, so err on adding.
 SOURCE_EXT = {
-    ".py": "python", ".js": "javascript", ".jsx": "javascript", ".ts": "javascript", ".tsx": "javascript",
-    ".java": "java", ".kt": "java", ".go": "go", ".rb": "ruby", ".rs": "rust", ".php": "php", ".cs": "dotnet",
+    ".py": "python", ".pyi": "python",
+    ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript", ".vue": "javascript",
+    ".ts": "typescript", ".tsx": "typescript", ".mts": "typescript", ".cts": "typescript",
+    ".java": "java", ".kt": "kotlin", ".kts": "kotlin", ".scala": "scala", ".sc": "scala",
+    ".go": "go", ".rb": "ruby", ".rs": "rust", ".php": "php", ".cs": "dotnet", ".swift": "swift",
+    ".c": "c", ".h": "c", ".cc": "cpp", ".cpp": "cpp", ".cxx": "cpp", ".hh": "cpp", ".hpp": "cpp", ".hxx": "cpp",
+    ".sh": "bash", ".bash": "bash", ".lua": "lua", ".ex": "elixir", ".exs": "elixir", ".sol": "solidity",
+    ".dart": "dart", ".ml": "ocaml", ".mli": "ocaml", ".clj": "clojure", ".cljs": "clojure", ".cljc": "clojure",
+    ".cls": "apex", ".trigger": "apex", ".r": "r", ".jl": "julia", ".hcl": "terraform",
     ".tf": "terraform",
 }
 SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", ".next", "vendor", "target"}

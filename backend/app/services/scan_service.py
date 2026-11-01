@@ -35,6 +35,19 @@ def posture_score(critical: int, high: int, medium: int, low: int) -> float:
     return round(100 * math.exp(-weight / 60), 1)
 
 
+def coverage_gap(outcomes: List[ScannerOutcome], detected: Optional[Dict]) -> Optional[str]:
+    """Why a posture score would overstate safety, or None. A score must never come from code no scanner read."""
+    status = {o.name: o for o in outcomes}
+    if not any(o.status == "completed" for o in outcomes):
+        return "no scanner completed"
+    langs = sorted((detected or {}).get("language_counts") or {})
+    sast = status.get("semgrep")
+    if langs and (sast is None or sast.status != "completed"):
+        why = sast.error if sast and sast.error else (sast.status if sast else "not run")
+        return f"source code ({', '.join(langs)}) was not analyzed: semgrep {why}"
+    return None
+
+
 def choose_scanners(detected: Dict, requested: Optional[List[str]]) -> Dict[str, str]:
     """Returns {scanner: 'run' | 'skipped:<reason>'}."""
     plan = {}
@@ -115,7 +128,7 @@ async def run_scan(scan_id: str) -> None:
             repo.ecosystems = detected["ecosystems"]
             repo.language = repo.language or (detected["primary_language"] or "").capitalize() or None
 
-            await _persist(db, scan, repo, outcomes, snap)
+            await _persist(db, scan, repo, outcomes, snap, detected)
         except snapshot.SnapshotError as e:
             scan.status, scan.error_message = ScanStatus.FAILED.value, str(e)
             _log(scan, f"Snapshot failed: {e}", "error")
@@ -130,7 +143,7 @@ async def run_scan(scan_id: str) -> None:
         await _post_scan(scan.id)
 
 
-async def _persist(db, scan: Scan, repo: Repository, outcomes: List[ScannerOutcome], snap) -> None:
+async def _persist(db, scan: Scan, repo: Repository, outcomes: List[ScannerOutcome], snap, detected: Optional[Dict] = None) -> None:
     all_findings: List[NormalizedFinding] = []
     covered_types = set()
     for o in outcomes:
@@ -196,7 +209,12 @@ async def _persist(db, scan: Scan, repo: Repository, outcomes: List[ScannerOutco
         scan.status = ScanStatus.COMPLETED.value
 
     open_rows = (await db.execute(select(Finding.severity).where(Finding.repository_id == repo.id, Finding.status == FindingStatus.OPEN.value))).scalars().all()
-    repo.security_score = posture_score(*(open_rows.count(s) for s in ("CRITICAL", "HIGH", "MEDIUM", "LOW")))
+    gap = coverage_gap(outcomes, detected)
+    if gap:
+        repo.security_score = None
+        _log(scan, f"Score withheld: {gap}. Zero findings here does not mean the code is safe.", "warning")
+    else:
+        repo.security_score = posture_score(*(open_rows.count(s) for s in ("CRITICAL", "HIGH", "MEDIUM", "LOW")))
     repo.last_scanned_at, repo.last_scanned_commit = now, snap.commit_sha
     if not (await db.execute(select(RepositoryCommit).where(RepositoryCommit.repository_id == repo.id, RepositoryCommit.sha == snap.commit_sha))).scalar_one_or_none():
         db.add(RepositoryCommit(repository_id=repo.id, sha=snap.commit_sha, branch=snap.branch, message=snap.message, author=snap.author))
