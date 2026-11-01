@@ -44,10 +44,8 @@ npm-debug.log*
 # Local overrides
 docker-compose.override.yml
 
-# Demo video: only the videos and the README thumbnail are committed; scripts, docs and source stay local
-/docs/demo-video/*
-!/docs/demo-video/*.mp4
-!/docs/demo-video/thumbnail.png
+# Demo video working files stay local; the rendered videos live in frontend/public/demo (served by the web app)
+/docs/demo-video/
 
 # Vercel CLI link
 .vercel/

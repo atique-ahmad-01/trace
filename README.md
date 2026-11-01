@@ -35,11 +35,11 @@ TRACE scans repositories with real security scanners, normalizes and deduplicate
 ## 🎬 Demo
 
 <p align="center">
-  <a href="docs/demo-video/trace-demo.mp4">
-    <img src="docs/demo-video/thumbnail.png" alt="Watch the TRACE product demo (2 min)" width="900" />
+  <a href="frontend/public/demo/trace-demo.mp4">
+    <img src="frontend/public/demo/thumbnail.png" alt="Watch the TRACE product demo (2 min)" width="900" />
   </a>
   <br />
-  <sub><b><a href="docs/demo-video/trace-demo.mp4">▶ Watch the 2-minute demo</a></b> · <a href="docs/demo-video/trace-demo-30s.mp4">30-second cut</a> · <a href="docs/demo-video/trace-architecture.mp4">Architecture animation</a></sub>
+  <sub><b><a href="frontend/public/demo/trace-demo.mp4">▶ Watch the 2-minute demo</a></b> · <a href="frontend/public/demo/trace-demo-30s.mp4">30-second cut</a> · <a href="frontend/public/demo/trace-architecture.mp4">Architecture animation</a> · <a href="https://trace-psi-gules.vercel.app/demo">Watch in the browser</a></sub>
 </p>
 
 Narrated walkthrough of the real product: connecting the model provider and GitHub in Settings → Integrations, a scan with four scanners, live vulnerability intelligence, a LangGraph AI investigation with cited evidence, and a human-approved fix verified by re-scanning. Every screen and number comes from a real run.
@@ -104,7 +104,7 @@ The full set of diagrams is in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**:
 ```text
 backend/    FastAPI API · scanners · intel · RAG · LangGraph agents · MCP · evals · tests
 frontend/   Next.js console (dashboard, findings, agents, intel, MCP, remediation, evals, reports)
-docs/       architecture diagrams · demo video (docs/demo-video)
+docs/       architecture diagrams (demo videos: frontend/public/demo, played at /demo)
 scripts/    tool install · local setup · dev runner
 ```
 
