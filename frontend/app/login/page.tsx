@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AcronymList, AcronymTags, Logo, SUBTITLE, TAGLINE, Wordmark } from '@/components/brand'
+import { ProjectLinksRow } from '@/components/project-links'
 import { Button, ErrorState, Input, Label, Notice } from '@/components/ui'
 import { API_URL, ApiError, api, login, session } from '@/lib/api'
 
@@ -209,6 +210,7 @@ export default function LoginPage() {
           <p className="mt-4 text-center text-[11px] text-muted-foreground">New accounts get read-only access to the TRACE Demo organization with real scan results.</p>
         )}
         {IS_LOCAL_API && <p className="mt-4 text-center text-[11px] text-muted-foreground">Local demo admin: admin@trace.example (password from DEMO_ADMIN_PASSWORD)</p>}
+        <ProjectLinksRow className="mt-6" />
         </div>
       </div>
     </div>

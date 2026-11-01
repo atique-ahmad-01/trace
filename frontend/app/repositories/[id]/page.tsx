@@ -9,7 +9,8 @@ import { FindingsTable } from '@/components/findings-table'
 import { useAuth } from '@/components/providers'
 import { VulnerabilityTrends } from '@/components/dashboard/vulnerability-trends'
 import { Badge, Button, Card, CardBody, CardHeader, Checkbox, DemoBadge, EmptyState, ErrorState, ExtLink, KV, Modal, PageHeader, Select, Skeleton, StatusBadge, THead, Table, Td, Th, Tr } from '@/components/ui'
-import { api, download } from '@/lib/api'
+import { ApiError, api, download } from '@/lib/api'
+import { ExternalLink, LOCAL_SETUP_URL, REPO_URL } from '@/components/project-links'
 import { useRequireIntegration } from '@/lib/integrations'
 import { ago, formatDate, shortSha } from '@/lib/utils'
 
@@ -194,6 +195,14 @@ function ScanModal({ open, onClose, repo }: { open: boolean; onClose: () => void
         </div>
         <Checkbox checked={auto} onChange={setAuto} label={<span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4" /> Auto-investigate top critical/high findings with AI agents</span>} />
         {run.error ? <ErrorState error={run.error} /> : null}
+        {run.error instanceof ApiError && run.error.status === 503 ? (
+          <p className="text-xs text-muted-foreground">
+            TRACE is open source: run it with all four scanners on your machine.{' '}
+            <ExternalLink href={LOCAL_SETUP_URL} className="text-primary hover:underline">Local setup guide</ExternalLink>
+            {' · '}
+            <ExternalLink href={REPO_URL} className="text-primary hover:underline">GitHub</ExternalLink>
+          </p>
+        ) : null}
       </div>
     </Modal>
   )
