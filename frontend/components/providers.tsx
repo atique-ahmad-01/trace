@@ -17,9 +17,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const isPublic = pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/demo')
   const [ready, setReady] = useState(false)
   useEffect(() => {
-    if (!isPublic && !session.token()) router.replace('/login')
+    // Logged-out visitors opening the site land on the public demo; deep links ask them to sign in.
+    if (!isPublic && !session.token()) router.replace(pathname === '/' ? '/demo' : '/login')
     setReady(true)
-  }, [isPublic, router])
+  }, [isPublic, pathname, router])
 
   const { data: me } = useQuery<Me>({ queryKey: ['me'], queryFn: () => api.get('/auth/me'), enabled: ready && !isPublic && !!session.token(), staleTime: 5 * 60_000 })
   const orgId = me ? session.org() && me.organizations.some((o) => o.id === session.org()) ? session.org() : me.organizations[0]?.id ?? null : null

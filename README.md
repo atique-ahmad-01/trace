@@ -35,11 +35,11 @@ TRACE scans repositories with real security scanners, normalizes and deduplicate
 ## 🎬 Demo
 
 <p align="center">
-  <a href="frontend/public/demo/trace-demo.mp4">
+  <a href="https://trace-psi-gules.vercel.app/demo">
     <img src="frontend/public/demo/thumbnail.png" alt="Watch the TRACE product demo (2 min)" width="900" />
   </a>
   <br />
-  <sub><b><a href="frontend/public/demo/trace-demo.mp4">▶ Watch the 2-minute demo</a></b> · <a href="frontend/public/demo/trace-demo-30s.mp4">30-second cut</a> · <a href="frontend/public/demo/trace-architecture.mp4">Architecture animation</a> · <a href="https://trace-psi-gules.vercel.app/demo">Watch in the browser</a></sub>
+  <sub><b><a href="https://trace-psi-gules.vercel.app/demo">▶ Watch the demo in the browser</a></b> · 2-minute product demo, 30-second cut and architecture animation</sub>
 </p>
 
 Narrated walkthrough of the real product: connecting the model provider and GitHub in Settings → Integrations, a scan with four scanners, live vulnerability intelligence, a LangGraph AI investigation with cited evidence, and a human-approved fix verified by re-scanning. Every screen and number comes from a real run.
