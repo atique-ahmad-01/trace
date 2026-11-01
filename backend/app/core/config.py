@@ -146,6 +146,21 @@ class Settings(BaseSettings):
     # demo shows real scan results without running a scan per visitor.
     DEMO_VIEWER_ON_REGISTER: bool = True
 
+    # Email verification. New accounts cannot sign in until they open the link sent to their email.
+    # Unset => required whenever mail can be delivered (SMTP_HOST set) or outside production, where
+    # the link is also logged and returned by /auth/register so local setups work without SMTP.
+    EMAIL_VERIFICATION_REQUIRED: Optional[bool] = None
+    EMAIL_VERIFICATION_EXPIRE_HOURS: int = 24
+    # Public URL of the frontend, used to build the link in the verification email.
+    FRONTEND_URL: str = "http://localhost:3000"
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM: Optional[str] = None  # defaults to SMTP_USERNAME
+    SMTP_SECURITY: str = "starttls"  # starttls | ssl | none
+    SMTP_TIMEOUT: int = 10
+
     @field_validator("CORS_ORIGINS", "ALLOWED_HOSTS", mode="before")
     @classmethod
     def _split_csv(cls, v):
@@ -178,6 +193,16 @@ class Settings(BaseSettings):
         if self.ENVIRONMENT != "production":
             return True
         return len(self.DEMO_ADMIN_PASSWORD) >= 12 and self.DEMO_ADMIN_PASSWORD != "trace-admin"
+
+    @property
+    def email_delivery_configured(self) -> bool:
+        return bool(self.SMTP_HOST)
+
+    @property
+    def email_verification_required(self) -> bool:
+        if self.EMAIL_VERIFICATION_REQUIRED is not None:
+            return self.EMAIL_VERIFICATION_REQUIRED
+        return self.email_delivery_configured or self.ENVIRONMENT != "production"
 
     @property
     def env_integrations_enabled(self) -> bool:

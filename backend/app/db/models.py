@@ -87,6 +87,7 @@ class User(Base, UUIDMixin, TimestampMixin):
     hashed_password = Column(String(255))
     is_active = Column(Boolean, default=True, nullable=False)
     is_superuser = Column(Boolean, default=False, nullable=False)
+    email_verified = Column(Boolean, default=False, nullable=False)
     github_username = Column(String(100))
     avatar_url = Column(String(500))
 

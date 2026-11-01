@@ -7,7 +7,7 @@ import { Sidebar } from '@/components/sidebar'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  if (pathname.startsWith('/login')) return <>{children}</>
+  if (pathname.startsWith('/login') || pathname.startsWith('/verify-email')) return <>{children}</>
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />

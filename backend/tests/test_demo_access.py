@@ -6,7 +6,7 @@ from sqlalchemy import delete, select
 from app.core import database
 from app.db.models import Organization, OrganizationMember, User
 
-from .conftest import register
+from .conftest import register, verify
 
 pytestmark = pytest.mark.asyncio
 
@@ -24,6 +24,7 @@ async def test_signup_joins_demo_org_as_viewer(client):
         r = await client.post("/api/v1/auth/register", json={"email": "visitor@example.com", "username": "visitor", "password": "correct-horse-battery"})
         assert r.status_code == 201, r.text
         assert r.json()["demo_organization_id"] == demo_id
+        await verify(client, r)
         tok = (await client.post("/api/v1/auth/login", data={"username": "visitor@example.com", "password": "correct-horse-battery"})).json()["access_token"]
         h = {"Authorization": f"Bearer {tok}"}
 
