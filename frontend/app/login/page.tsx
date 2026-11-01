@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AcronymList, AcronymTags, Logo, SUBTITLE, TAGLINE, Wordmark } from '@/components/brand'
-import { Button, ErrorState, Input, Label } from '@/components/ui'
-import { API_URL, api, login, session } from '@/lib/api'
+import { Button, ErrorState, Input, Label, Notice } from '@/components/ui'
+import { API_URL, ApiError, api, login, session } from '@/lib/api'
 
 const IS_LOCAL_API = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(API_URL)
 
@@ -50,24 +50,71 @@ export default function LoginPage() {
   const [org, setOrg] = useState('')
   const [error, setError] = useState<unknown>(null)
   const [loading, setLoading] = useState(false)
+  // Shown after sign-up, after resending a link, or when the verify page sends the visitor back here.
+  const [notice, setNotice] = useState<{ text: string; link?: string } | null>(null)
+  const [unverified, setUnverified] = useState(false)
+  const [resending, setResending] = useState(false)
   const server = useServerWarmup()
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('verified') === '1') setNotice({ text: 'Email verified. You can sign in now.' })
+    const e = params.get('email')
+    if (e) setEmail(e)
+  }, [])
+
+  function switchMode(next: 'login' | 'register') {
+    setMode(next)
+    setError(null)
+    setNotice(null)
+    setUnverified(false)
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setNotice(null)
+    setUnverified(false)
     setLoading(true)
     try {
       if (mode === 'register') {
-        const res = await api.post<{ demo_organization_id?: string | null }>('/auth/register', { email, password, username, organization_name: org || undefined })
-        // Land new visitors on the populated demo organization; their own org is one switch away.
+        const res = await api.post<{ demo_organization_id?: string | null; verification_required?: boolean; verification_url?: string }>(
+          '/auth/register',
+          { email, password, username, organization_name: org || undefined },
+        )
+        // Land new visitors on the populated demo organization once they sign in; their own org is one switch away.
         session.setOrg(res.demo_organization_id ?? null)
+        // Registration never signs in: the visitor confirms their email, then signs in here.
+        setMode('login')
+        setPassword('')
+        setNotice(
+          res.verification_required
+            ? { text: `Account created. We sent a verification link to ${email}. Open it, then sign in.`, link: res.verification_url }
+            : { text: 'Account created. Sign in to continue.' },
+        )
+        return
       }
       await login(email, password)
       router.replace('/')
     } catch (err) {
+      if (err instanceof ApiError && (err.detail as any)?.code === 'email_not_verified') setUnverified(true)
       setError(err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function resend() {
+    setResending(true)
+    try {
+      const res = await api.post<{ message: string; verification_url?: string }>('/auth/resend-verification', { email })
+      setError(null)
+      setUnverified(false)
+      setNotice({ text: res.message, link: res.verification_url })
+    } catch (err) {
+      setError(err)
+    } finally {
+      setResending(false)
     }
   }
 
@@ -119,13 +166,29 @@ export default function LoginPage() {
             <Label htmlFor="password" hint={mode === 'register' ? 'min 10 characters' : undefined}>Password</Label>
             <Input id="password" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} required minLength={mode === 'register' ? 10 : 1} value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
+          {notice && (
+            <Notice tone="success">
+              {notice.text}
+              {notice.link && (
+                <span className="mt-1 block text-[11px]">
+                  Email delivery is not configured on this server.{' '}
+                  <a href={notice.link} className="text-primary underline">Open verification link</a>
+                </span>
+              )}
+            </Notice>
+          )}
           {error ? <ErrorState error={error} /> : null}
+          {unverified && (
+            <Button type="button" variant="outline" className="w-full" loading={resending} onClick={resend}>
+              Resend verification email
+            </Button>
+          )}
           <Button type="submit" className="w-full" loading={loading}>
             {mode === 'login' ? 'Sign in' : 'Create account'}
           </Button>
           <p className="text-center text-xs text-muted-foreground">
             {mode === 'login' ? 'No account? ' : 'Have an account? '}
-            <button type="button" className="text-primary hover:underline" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
+            <button type="button" className="text-primary hover:underline" onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}>
               {mode === 'login' ? 'Register' : 'Sign in'}
             </button>
           </p>

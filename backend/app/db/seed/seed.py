@@ -31,7 +31,7 @@ async def seed(queue_jobs: bool = True) -> None:
         admin = (await db.execute(select(User).where(User.email == settings.DEMO_ADMIN_EMAIL))).scalar_one_or_none()
         if not admin:
             admin = User(email=settings.DEMO_ADMIN_EMAIL, username="admin", full_name="TRACE Admin",
-                         hashed_password=get_password_hash(settings.DEMO_ADMIN_PASSWORD), is_superuser=True)
+                         hashed_password=get_password_hash(settings.DEMO_ADMIN_PASSWORD), is_superuser=True, email_verified=True)
             db.add(admin)
             await db.flush()
             logger.info(f"Created admin user {settings.DEMO_ADMIN_EMAIL}")

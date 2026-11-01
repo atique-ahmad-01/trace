@@ -14,7 +14,7 @@ export const useAuth = () => useContext(AuthContext)
 function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const isPublic = pathname.startsWith('/login')
+  const isPublic = pathname.startsWith('/login') || pathname.startsWith('/verify-email')
   const [ready, setReady] = useState(false)
   useEffect(() => {
     if (!isPublic && !session.token()) router.replace('/login')

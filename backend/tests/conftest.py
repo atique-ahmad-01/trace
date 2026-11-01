@@ -46,10 +46,20 @@ async def client():
         yield c
 
 
+async def verify(client, register_response) -> None:
+    """Opens the verification link a registration returned (tests run without SMTP)."""
+    body = register_response.json()
+    if body.get("verification_required"):
+        token = body["verification_url"].split("token=", 1)[1]
+        r = await client.post("/api/v1/auth/verify-email", json={"token": token})
+        assert r.status_code == 200, r.text
+
+
 async def register(client, name: str) -> dict:
     email = f"{name}@example.com"
     r = await client.post("/api/v1/auth/register", json={"email": email, "username": name, "password": "correct-horse-battery"})
     assert r.status_code == 201, r.text
+    await verify(client, r)
     tok = (await client.post("/api/v1/auth/login", data={"username": email, "password": "correct-horse-battery"})).json()["access_token"]
     return {"Authorization": f"Bearer {tok}"}
 

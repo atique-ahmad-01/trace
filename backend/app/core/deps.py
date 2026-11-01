@@ -22,7 +22,8 @@ ROLE_RANK = {"viewer": 0, "member": 1, "admin": 2, "owner": 3}
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
     payload = decode_access_token(token)
-    if not payload or "sub" not in payload:
+    # Purpose-scoped tokens (e.g. email verification links) are not session tokens.
+    if not payload or "sub" not in payload or payload.get("purpose"):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid or expired token", headers={"WWW-Authenticate": "Bearer"})
     try:
         user_id = uuid.UUID(payload["sub"])
