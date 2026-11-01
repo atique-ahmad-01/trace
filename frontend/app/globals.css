@@ -27,6 +27,9 @@
     --sev-low: 205 70% 46%;
     --sev-info: 220 9% 55%;
     --radius: 0.5rem;
+    /* Brand gradient stops, darker on light backgrounds so gradient text stays readable. */
+    --brand-from: 186 85% 32%;
+    --brand-to: 258 70% 52%;
   }
   .dark {
     --background: 224 24% 6%;
@@ -51,6 +54,8 @@
     --sev-medium: 42 92% 56%;
     --sev-low: 205 80% 62%;
     --sev-info: 220 10% 60%;
+    --brand-from: 186 85% 50%;
+    --brand-to: 258 90% 66%;
   }
   * { @apply border-border; }
   html, body { height: 100%; }

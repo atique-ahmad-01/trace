@@ -48,7 +48,7 @@ export default function OverviewPage() {
       {summary.error ? <ErrorState error={summary.error} /> : null}
       {d?.data_scope.demo_data_present && scope !== 'real' && (
         <Notice tone="warning" className="mb-4">
-          Includes demo data: findings from scanning the bundled intentionally vulnerable fixture (<span className="font-mono">local/vulnerable-app</span>). These are real scanner results on sample code. Use “Real scans only” to exclude them.
+          Includes demo data: real scanner results from local test fixtures (repositories marked <span className="font-medium">Demo</span>), such as the bundled intentionally vulnerable app. Use “Real scans only” to exclude them.
         </Notice>
       )}
 
@@ -69,7 +69,7 @@ export default function OverviewPage() {
             ) : (
               <>
                 <Stat label="Repositories" value={fmtNum(d.total_repositories)} icon={FolderGit2} sub={`${fmtNum(d.total_scans)} scans`} />
-                <Stat label="Open findings" value={fmtNum(d.open_findings)} icon={ShieldAlert} sub={`${fmtNum(d.resolved_findings)} resolved`} />
+                <Stat label="Open findings" value={fmtNum(d.open_findings)} icon={ShieldAlert} sub={`${d.severity_counts.INFO ? `${fmtNum(d.severity_counts.INFO)} info · ` : ''}${fmtNum(d.resolved_findings)} resolved`} />
                 <Stat label="Critical" value={fmtNum(d.severity_counts.CRITICAL)} tone={SEV_VAR.CRITICAL} icon={AlertOctagon} sub="open" />
                 <Stat label="High" value={fmtNum(d.severity_counts.HIGH)} tone={SEV_VAR.HIGH} sub="open" />
                 <Stat label="Medium" value={fmtNum(d.severity_counts.MEDIUM)} tone={SEV_VAR.MEDIUM} sub="open" />
