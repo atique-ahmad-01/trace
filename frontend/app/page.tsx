@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { AlertOctagon, Bot, FolderGit2, ScanSearch, ShieldAlert, Wrench } from 'lucide-react'
 import { MostVulnerableRepos } from '@/components/dashboard/most-vulnerable-repos'
@@ -13,8 +13,24 @@ import { Card, CardBody, CardHeader, EmptyState, ErrorState, LinkButton, Notice,
 import { api, qs } from '@/lib/api'
 import { SEV_VAR, ago, fmtNum, titleCase } from '@/lib/utils'
 
+const SCOPE_KEY = 'trace.dashboard.scope'
+
 export default function OverviewPage() {
-  const [scope, setScope] = useState('')
+  const [scope, setScopeState] = useState('')
+  // Remember the data-scope filter across reloads, like the theme.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SCOPE_KEY)
+      if (saved === 'real' || saved === 'demo') setScopeState(saved)
+    } catch {}
+  }, [])
+  const setScope = (value: string) => {
+    setScopeState(value)
+    try {
+      if (value) localStorage.setItem(SCOPE_KEY, value)
+      else localStorage.removeItem(SCOPE_KEY)
+    } catch {}
+  }
   const [range, setRange] = useState('30d')
   const demo = scope === '' ? undefined : scope === 'demo'
   const intraday = range.endsWith('h')
