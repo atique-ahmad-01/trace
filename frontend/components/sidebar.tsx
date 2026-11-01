@@ -10,6 +10,7 @@ import {
   FileText,
   FolderGit2,
   LayoutDashboard,
+  PlayCircle,
   Plug,
   ScanSearch,
   Settings,
@@ -84,6 +85,10 @@ export function Sidebar() {
         ))}
         <div>
           <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Open source</p>
+          <Link href="/demo" className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+            <PlayCircle className="h-4 w-4" />
+            Demo video
+          </Link>
           <ProjectLinksList />
         </div>
       </nav>
