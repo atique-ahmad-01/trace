@@ -222,6 +222,17 @@ def run_osv(root: str, work: str) -> ScannerOutcome:
 # --------------------------------------------------------------------------- Semgrep
 
 
+def _semgrep_severity(raw, meta: dict) -> str:
+    """Low-confidence audit rules flag code worth a look, not a likely vulnerability (Semgrep's own taxonomy).
+    Report them as INFO so they stay visible but do not sink the posture score; e.g. insecure-use-memset fires on
+    every memset() in C, ~200 times in the Linux Bluetooth stack."""
+    subcat = meta.get("subcategory") or []
+    subcat = [subcat] if isinstance(subcat, str) else subcat
+    if "audit" in subcat and str(meta.get("confidence", "")).upper() == "LOW":
+        return "INFO"
+    return norm_severity(raw)
+
+
 def parse_semgrep(data: dict, root: str) -> List[NormalizedFinding]:
     out: List[NormalizedFinding] = []
     for r in data.get("results") or []:
@@ -241,7 +252,7 @@ def parse_semgrep(data: dict, root: str) -> List[NormalizedFinding]:
                 scanner="semgrep",
                 finding_type="secret" if is_secret else "sast",
                 title=rule.split(".")[-1].replace("-", " ").replace("_", " ").capitalize(),
-                severity=norm_severity(extra.get("severity")),
+                severity=_semgrep_severity(extra.get("severity"), meta),
                 description=extra.get("message", ""),
                 rule_id=rule,
                 cwe_ids=extract_cwes(meta.get("cwe")),
@@ -256,13 +267,34 @@ def parse_semgrep(data: dict, root: str) -> List[NormalizedFinding]:
     return out
 
 
+# Language rule packs added to p/default, which barely covers some languages (it has almost no C rules).
+# r/<prefix> selects registry rules by id prefix, so C uses "r/c.lang": plain "r/c" also matches csharp.* and clojure.*.
+SEMGREP_LANGUAGE_PACKS = {
+    "python": "p/python", "javascript": "p/javascript", "typescript": "p/typescript", "java": "p/java",
+    "kotlin": "p/kotlin", "scala": "p/scala", "go": "p/golang", "ruby": "p/ruby", "rust": "p/rust", "php": "p/php",
+    "dotnet": "p/csharp", "swift": "r/swift", "c": "r/c.lang", "cpp": "r/c.lang", "bash": "r/bash",
+    "elixir": "r/elixir", "solidity": "r/solidity", "ocaml": "p/ocaml", "clojure": "r/clojure", "apex": "p/apex",
+    "terraform": "p/terraform", "docker": "p/dockerfile",
+}
+
+
+def semgrep_configs(root: str) -> List[str]:
+    if settings.SEMGREP_CONFIG != "auto":
+        return [settings.SEMGREP_CONFIG]
+    from app.scanners.ecosystems import detect
+
+    found = detect(root)
+    langs = set(found["language_counts"]) | set(found["ecosystems"])
+    return ["p/default", *sorted({SEMGREP_LANGUAGE_PACKS[lang] for lang in langs if lang in SEMGREP_LANGUAGE_PACKS})]
+
+
 def run_semgrep(root: str, work: str) -> ScannerOutcome:
     binary = runner.resolve_tool(settings.SEMGREP_PATH)
     if not binary:
         return ScannerOutcome("semgrep", "unavailable", error="semgrep binary not found")
     out_file = os.path.join(work, "semgrep.json")
-    config = settings.SEMGREP_CONFIG if settings.SEMGREP_CONFIG != "auto" else "p/default"
-    argv = [binary, "scan", "--config", config, "--json", "--metrics", "off", "--quiet", "--no-git-ignore",
+    config_args = [a for c in semgrep_configs(root) for a in ("--config", c)]
+    argv = [binary, "scan", *config_args, "--json", "--metrics", "off", "--quiet", "--no-git-ignore",
             "--timeout", "30", "--max-target-bytes", "1000000", "--max-memory", str(settings.SCANNER_MEMORY_LIMIT_MB),
             "-o", out_file, root]
     res = runner.run(argv, extra_env={"HOME": work, "SEMGREP_SEND_METRICS": "off", "SEMGREP_ENABLE_VERSION_CHECK": "0"},

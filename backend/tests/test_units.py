@@ -6,11 +6,13 @@ from app.agents.graph import _choose_fixed, compute_risk
 from app.agents.prompts import detect_injection, valid_citations
 from app.core.logging import redact
 from app.core.security import decrypt_secret, encrypt_secret, get_password_hash, verify_github_webhook_signature, verify_password
-from app.scanners.adapters import parse_gitleaks, parse_osv, parse_semgrep, parse_trivy
+from app.core.config import settings
+from app.scanners import ecosystems
+from app.scanners.adapters import ScannerOutcome, parse_gitleaks, parse_osv, parse_semgrep, parse_trivy, semgrep_configs
 from app.scanners.normalize import dedupe, norm_severity, severity_from_cvss
 from app.services.ai_security import judge, static_assessment
 from app.services.patching import make_patch, patch_package_json, patch_requirements
-from app.services.scan_service import choose_scanners, posture_score
+from app.services.scan_service import choose_scanners, coverage_gap, posture_score
 
 from .conftest import FIXTURE
 
@@ -71,6 +73,48 @@ def test_posture_score_monotonic():
 def test_choose_scanners_skips_dependency_scanner_without_manifests():
     plan = choose_scanners({"has_dependencies": False, "language_counts": {"python": 1}, "ecosystems": ["python"]}, None)
     assert plan["osv-scanner"].startswith("skipped") and plan["semgrep"] == "run" and plan["gitleaks"] == "run"
+
+
+def test_detect_covers_c_and_other_languages(tmp_path):
+    for name in ("l2cap.c", "l2cap.h", "app.cpp", "run.sh", "Token.sol", "main.swift", "App.kt"):
+        (tmp_path / name).write_text("x\n")
+    counts = ecosystems.detect(str(tmp_path))["language_counts"]
+    assert counts == {"c": 2, "cpp": 1, "bash": 1, "solidity": 1, "swift": 1, "kotlin": 1}
+    plan = choose_scanners(ecosystems.detect(str(tmp_path)), None)
+    assert plan["semgrep"] == "run"
+
+
+def test_semgrep_configs_add_language_packs(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "SEMGREP_CONFIG", "auto")
+    (tmp_path / "hci.c").write_text("int x;\n")
+    (tmp_path / "app.py").write_text("x = 1\n")
+    assert semgrep_configs(str(tmp_path)) == ["p/default", "p/python", "r/c.lang"]
+    monkeypatch.setattr(settings, "SEMGREP_CONFIG", "/rules/offline.yml")
+    assert semgrep_configs(str(tmp_path)) == ["/rules/offline.yml"]
+
+
+def test_semgrep_low_confidence_audit_rules_are_info():
+    def result(meta, sev="WARNING"):
+        return {"check_id": "c.lang.security.x", "path": "a.c", "start": {"line": 1}, "end": {"line": 1},
+                "extra": {"severity": sev, "message": "m", "metadata": meta}}
+    data = {"results": [
+        result({"subcategory": ["audit"], "confidence": "LOW"}),       # insecure-use-memset style
+        result({"subcategory": ["vuln"], "confidence": "LOW"}),        # use-after-free style: keep
+        result({"subcategory": ["audit"], "confidence": "MEDIUM"}),    # confident audit: keep
+        result({}, "ERROR"),
+    ]}
+    assert [f.severity for f in parse_semgrep(data, "/")] == ["INFO", "MEDIUM", "MEDIUM", "HIGH"]
+
+
+def test_score_withheld_when_source_code_not_analyzed():
+    c_repo = {"language_counts": {"c": 300}, "ecosystems": ["c"]}
+    done = ScannerOutcome("gitleaks", "completed")
+    assert "semgrep" in coverage_gap([done, ScannerOutcome("semgrep", "skipped", error="no supported source files")], c_repo)
+    assert "semgrep" in coverage_gap([done, ScannerOutcome("semgrep", "unavailable", error="semgrep binary not found")], c_repo)
+    assert coverage_gap([ScannerOutcome("gitleaks", "failed")], c_repo) == "no scanner completed"
+    assert coverage_gap([done, ScannerOutcome("semgrep", "completed")], c_repo) is None
+    # No source code at all (e.g. only manifests): dependency/secret scanners alone are full coverage.
+    assert coverage_gap([done], {"language_counts": {}, "ecosystems": []}) is None
 
 
 def test_requirements_and_package_json_patch():
