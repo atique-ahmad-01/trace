@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Github } from 'lucide-react'
 import { Logo, SUBTITLE, TAGLINE, Wordmark } from '@/components/brand'
-import { ProjectLinksRow } from '@/components/project-links'
+import { ExternalLink, ProjectLinksRow, REPO_URL } from '@/components/project-links'
 import { cn } from '@/lib/utils'
 
 const VIDEOS = [
@@ -32,9 +32,15 @@ export default function DemoPage() {
             <Logo className="h-8 w-8" />
             <Wordmark className="text-base" />
           </Link>
-          <Link href="/login" className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-            Sign in <ArrowRight className="h-4 w-4" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <ExternalLink href={REPO_URL} title="TRACE on GitHub" className="inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">
+              <Github className="h-4 w-4" />
+              <span className="hidden sm:inline">GitHub</span>
+            </ExternalLink>
+            <Link href="/login" className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+              Sign in <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </header>
 
