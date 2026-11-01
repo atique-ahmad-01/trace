@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { PlayCircle } from 'lucide-react'
+import { ArrowLeft, Github, PlayCircle, ShieldCheck } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { AcronymList, AcronymTags, Logo, SUBTITLE, TAGLINE, Wordmark } from '@/components/brand'
-import { ProjectLinksRow } from '@/components/project-links'
+import { AcronymList, Headline, Logo, Wordmark } from '@/components/brand'
+import { ExternalLink, ProjectLinksRow, REPO_URL } from '@/components/project-links'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Button, ErrorState, Input, Label, Notice } from '@/components/ui'
 import { API_URL, ApiError, api, login, session } from '@/lib/api'
 
@@ -129,30 +130,43 @@ export default function LoginPage() {
           style={{ background: 'radial-gradient(600px circle at 15% 20%, hsl(186 85% 50% / 0.12), transparent 60%), radial-gradient(500px circle at 85% 85%, hsl(258 90% 66% / 0.12), transparent 60%)' }}
           aria-hidden
         />
-        <div className="relative max-w-md">
-          <div className="mb-8 flex items-center gap-3">
-            <Logo className="h-12 w-12" />
-            <Wordmark className="text-3xl" />
-          </div>
-          <h2 className="text-3xl font-semibold leading-tight tracking-tight">{TAGLINE}</h2>
-          <p className="mt-3 text-sm text-muted-foreground">{SUBTITLE}</p>
-          <AcronymList className="mt-10" />
-          <Link href="/demo" className="mt-8 inline-flex items-center gap-2 rounded-md border bg-background/60 px-4 py-2 text-sm font-medium hover:bg-accent">
-            <PlayCircle className="h-4 w-4 text-primary" /> Watch the 2-minute demo
+        <div className="relative max-w-lg">
+          <Link href="/demo" className="mb-10 flex w-fit items-center gap-3" title="Back to the TRACE website">
+            <Logo className="h-11 w-11" />
+            <Wordmark className="text-2xl" />
           </Link>
+          <span className="inline-flex items-center gap-1.5 rounded-full border bg-background/60 px-3 py-1 text-xs text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Open source · self-hosted · MIT
+          </span>
+          <Headline as="h2" className="mt-5 text-4xl leading-[1.1]" />
+          <p className="mt-4 text-sm text-muted-foreground">
+            Real scanners, AI investigations with cited evidence, and fixes verified by re-scanning before any pull request.
+          </p>
+          <AcronymList className="mt-10" />
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Link href="/demo#demo" className="inline-flex h-10 items-center gap-2 rounded-md border bg-background/60 px-4 text-sm font-medium hover:bg-accent">
+              <PlayCircle className="h-4 w-4 text-primary" /> Watch the 2-minute demo
+            </Link>
+            <ExternalLink href={REPO_URL} className="inline-flex h-10 items-center gap-2 rounded-md border bg-background/60 px-4 text-sm font-medium hover:bg-accent">
+              <Github className="h-4 w-4" /> Star on GitHub
+            </ExternalLink>
+          </div>
         </div>
       </section>
-      <div className="flex items-center justify-center px-4 py-10">
+      <div className="relative flex items-center justify-center px-4 py-10">
+        <Link href="/demo" className="absolute left-4 top-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to website
+        </Link>
+        <ThemeToggle className="absolute right-4 top-3" />
         <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
-          <Logo className="mb-3 h-14 w-14" />
-          <h1><Wordmark className="text-2xl" /></h1>
-          <p className="mt-2 text-sm font-medium">{TAGLINE}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{SUBTITLE}</p>
-          <AcronymTags className="mt-4 justify-center lg:hidden" />
-          <Link href="/demo" className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline lg:hidden">
-            <PlayCircle className="h-3.5 w-3.5" /> Watch the demo
-          </Link>
+          <Logo className="mb-3 h-14 w-14 lg:hidden" />
+          <p className="lg:hidden"><Wordmark className="text-2xl" /></p>
+          <Headline as="h2" className="mt-4 text-xl leading-snug lg:hidden" />
+          <h1 className="mt-6 text-xl font-semibold tracking-tight lg:mt-0 lg:text-2xl">{mode === 'login' ? 'Sign in to TRACE' : 'Create your account'}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {mode === 'login' ? 'Welcome back. Your scans are waiting.' : 'Free and open source. Takes a minute.'}
+          </p>
         </div>
         <form onSubmit={submit} className="space-y-4 rounded-lg border bg-surface p-6 shadow-sm">
           <div>

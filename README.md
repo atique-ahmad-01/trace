@@ -4,9 +4,9 @@
 
 # T R A C E
 
-### Trace Every Risk. Trust Every System.
+### Find real vulnerabilities. Fix them only with your approval.
 
-**AI-Powered Security & Compliance Intelligence**
+Open-source, self-hosted AI security for your repositories: real scanners, AI investigations with cited evidence, and fixes verified by re-scanning.
 
 [![CI](https://github.com/atique-ahmad-01/trace/actions/workflows/ci.yml/badge.svg)](https://github.com/atique-ahmad-01/trace/actions/workflows/ci.yml)
 ![status: alpha](https://img.shields.io/badge/status-alpha-orange)
@@ -16,40 +16,116 @@
 ![Next.js 14](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
 ![LangGraph](https://img.shields.io/badge/LangGraph-agents-1C3C3C)
 
-[Demo](#-demo) · [Features](#-features) · [Architecture](#-architecture) · [Quick start](#-quick-start) · [Production](#production-vercel--render) · [Configuration](#%EF%B8%8F-configuration) · [Security model](#-security-model) · [Tests](#-tests)
+**[🌐 Website & demo](https://trace-psi-gules.vercel.app/demo)** · [Real result](#-see-it-on-a-real-app) · [How it works](#%EF%B8%8F-how-it-works) · [Quick start](#-quick-start) · [FAQ](#-faq-and-limits) · [Features](#-features) · [Architecture](#-architecture) · [Security model](#-security-model)
 
 </div>
 
 ---
 
-TRACE scans repositories with real security scanners, normalizes and deduplicates their findings, and enriches them with vulnerability intelligence (NVD, OSV, GitHub Security Advisories, CISA KEV). A LangGraph multi-agent workflow investigates each finding, with retrieval-augmented evidence and MCP tool calls, and proposes fixes. A fix is applied only after **human approval**, then verified by applying the patch to an isolated snapshot and re-scanning. TRACE also assesses AI/agent applications for prompt-injection and tool-misuse risks, and evaluates its own agents.
-
-| | Pillar | What it means in TRACE |
-|:-:|---|---|
-| **T** | **Threat** | Scanners and threat intelligence surface what can hurt you |
-| **R** | **Risk** | Deterministic scoring from CVSS, KEV and reachability |
-| **A** | **Analysis** | AI agents investigate with cited evidence |
-| **C** | **Compliance** | Human approval and a full audit trail for every change |
-| **E** | **Evaluation** | Fixes verified by re-scan; agents measured by benchmarks |
-
-## 🎬 Demo
+Security scanners are good at producing alerts and bad at telling you which ones matter. TRACE runs the scanners you already trust (Trivy, OSV-Scanner, Semgrep, Gitleaks), merges their results into one deduplicated list, and enriches every finding with vulnerability intelligence from NVD, OSV, GitHub advisories and CISA KEV. LangGraph agents then read the code and explain each finding with cited evidence. When a fix is proposed, nothing changes until **you approve it**, and TRACE re-scans a patched copy before it opens a pull request.
 
 <p align="center">
   <a href="https://trace-psi-gules.vercel.app/demo">
     <img src="frontend/public/demo/thumbnail.png" alt="Watch the TRACE product demo (2 min)" width="900" />
   </a>
   <br />
-  <sub><b><a href="https://trace-psi-gules.vercel.app/demo">▶ Watch the demo in the browser</a></b> · 2-minute product demo, 30-second cut and architecture animation</sub>
+  <sub><b><a href="https://trace-psi-gules.vercel.app/demo">▶ Watch the 2-minute demo</a></b> · every screen and number comes from a real run</sub>
 </p>
 
-Narrated walkthrough of the real product: connecting the model provider and GitHub in Settings → Integrations, a scan with four scanners, live vulnerability intelligence, a LangGraph AI investigation with cited evidence, and a human-approved fix verified by re-scanning. Every screen and number comes from a real run.
+## 🔎 See it on a real app
+
+Results of a real TRACE scan of [OWASP Juice Shop](https://github.com/juice-shop/juice-shop), an intentionally vulnerable web app, at commit `717f5ef`, run on a laptop (summarized from the scan log and the investigation):
+
+```text
+juice-shop · 717f5ef                     languages: TypeScript, JavaScript, Python, Bash, Solidity
+  ✓ trivy         89 findings   infrastructure as code, misconfiguration
+  ✓ semgrep      139 findings   source code
+  ✓ gitleaks      69 findings   secrets
+  ✓ osv-scanner    0 findings
+
+  288 unique findings · 20 critical · 101 high · 40 medium · 40 low
+
+  HIGH  SQL injection · routes/login.ts:34
+        AI verdict: user input reaches a Sequelize query through string interpolation.
+        Fix: use parameterized queries.  Risk 7.0 · P2 · 6 cited sources · code read via MCP
+```
+
+TRACE found Juice Shop's well-known login SQL injection and explained it with cited evidence. One honest gap: osv-scanner returned 0 findings because Juice Shop ships without a lockfile, and TRACE does not flag that yet (see [limits](#-faq-and-limits)).
+
+## ⚙️ How it works
+
+| | Step | What happens |
+|:-:|---|---|
+| 1 | **Connect** | A GitHub repo, any public https git URL, or a local fixture. Pick a branch. |
+| 2 | **Scan** | Four scanners on an isolated snapshot, covering about 30 languages including C and C++. Repository code is never executed. |
+| 3 | **Enrich** | Findings are normalized, deduplicated and matched against NVD, OSV, GitHub advisories and CISA KEV. |
+| 4 | **Investigate** | LangGraph agents read the code through MCP tools, retrieve evidence (RAG) and explain each finding with citations. |
+| 5 | **Approve & verify** | You approve or reject the fix. TRACE applies it to a snapshot, re-scans, then opens a PR. It never merges. |
+
+The name is the method: **T**hreat (scanners and threat intel) · **R**isk (deterministic scoring from CVSS, KEV and reachability) · **A**nalysis (AI agents with cited evidence) · **C**ompliance (human approval and a full audit trail) · **E**valuation (fixes verified by re-scan, agents measured by benchmarks).
+
+## ⚖️ Scanners alone vs TRACE
+
+| | Scanners alone | With TRACE |
+|---|---|---|
+| **What you get** | Hundreds of raw alerts, duplicated across tools | One deduplicated list, ranked by risk |
+| **Context** | A rule id and a line number | CVE intel plus an AI investigation that cites its sources |
+| **Priority** | Each tool's own severity | A deterministic risk score from CVSS, KEV and reachability |
+| **The fix** | Yours to write and test | A proposed patch, your approval, verified by re-scan, opened as a PR |
+| **Blind spots** | A skipped scanner looks the same as a clean result | Code no scanner read never gets a passing score |
+
+## 🚀 Quick start
+
+### Local (no Docker)
+
+**Requirements:** Node 20+, `curl`, `git`, and [Ollama](https://ollama.com) with `qwen2.5-coder:7b` and `nomic-embed-text` pulled.
+
+```bash
+scripts/dev-setup.sh     # scanners + uv/Python 3.12 into ./.tools, backend venv, npm install, .env with fresh secrets
+scripts/dev.sh           # backend :8000 + frontend :3000
+```
+
+Open **http://localhost:3000** and sign in as `admin@trace.example` with the password from `DEMO_ADMIN_PASSWORD` (default `trace-admin`, local only). API docs are at **http://localhost:8000/docs**.
+
+On first start the backend:
+
+1. runs migrations;
+2. seeds the admin user, organization, built-in MCP server and evaluation datasets;
+3. connects `backend/tests/fixtures/vulnerable-app` as a **DEMO** repository and scans it with the real scanners. Demo findings are labeled everywhere and can be filtered out;
+4. ingests OWASP and CWE knowledge into the RAG index in the background.
+
+Then connect a model in **Settings → Integrations** (for example Ollama at `http://localhost:11434` with `qwen2.5-coder:7b`) and click **Save & verify**. In development the model settings in `.env` are used until you do, so AI features work right away. To try the production behaviour, where everything must be set up in the UI, start the backend with `INTEGRATIONS_ENV_FALLBACK=false`. See [Integrations](#integrations-from-the-ui).
+
+### Docker Compose
+
+```bash
+cp .env.example .env    # set SECRET_KEY / JWT_SECRET_KEY
+docker compose up -d --build
+docker compose exec ollama ollama pull qwen2.5-coder:7b
+docker compose exec ollama ollama pull nomic-embed-text
+```
+
+Then connect the model in **Settings → Integrations**. Inside Compose, Ollama's base URL is `http://ollama:11434`.
+
+Compose runs PostgreSQL, Redis + an RQ worker, a Qdrant server, Ollama, the API and the frontend. Containers drop all capabilities, use `no-new-privileges` and run as a non-root user, and the worker has CPU and memory limits.
+
+### Production (Vercel + Render)
+
+The Next.js frontend runs on **Vercel**. The API runs on **Render**, because scans, cloning and long agent jobs need a container with a disk, which Vercel functions do not provide.
+
+1. **Backend:** in Render, choose **New → Blueprint** and pick this repository. [`render.yaml`](render.yaml) creates the `trace-api` Docker service (from `backend/Dockerfile`) and a PostgreSQL 16 database. When prompted, set `DEMO_ADMIN_PASSWORD` to a strong password (12+ characters). In production the default password is refused and seeding is skipped.
+2. **Frontend:** a Vercel project with **Root Directory** `frontend`, connected to this repository. Set `NEXT_PUBLIC_API_URL` to the Render service URL. Pushes to `main` deploy to production; other branches get preview URLs.
+3. **CORS:** `CORS_ORIGINS` and `CORS_ORIGIN_REGEX` in `render.yaml` allow the Vercel production domain (`https://trace-psi-gules.vercel.app`) and its preview deployments.
+4. Sign in and connect a model provider (Anthropic, an OpenAI-compatible API, or an Ollama server reachable from Render) and GitHub in **Settings → Integrations**. The env fallback is off in production.
+
+The Blueprint uses Render's free plans, which run the public demo: visitors browse the seeded demo scan read-only, the API sleeps after 15 minutes idle (the login page wakes it), and the free database is deleted after 30 days (switch `trace-db` to `basic-256mb` to keep it). Scanning real repositories with Semgrep and Trivy needs the Standard plan (2 GB) or more.
 
 ## ✨ Features
 
 | Area | What it does |
 |---|---|
 | 📦 **Repositories** | Connect a GitHub repo (App installation or stored token), any public https git URL, or a test fixture. Pick a branch and track commits, scan history and posture. |
-| 🔍 **Scans** | Choose scanners, run them on an isolated snapshot, view per-scanner status, version, duration and logs. An unavailable scanner is reported as unavailable, never faked. |
+| 🔍 **Scans** | Choose scanners, run them on an isolated snapshot, view per-scanner status, version, duration and logs. Semgrep covers about 30 languages (Python, JS/TS, Java, Go, C/C++, Rust, PHP, Ruby, C#, Kotlin, Swift, Solidity, Bash, Terraform and more). An unavailable or skipped scanner is reported as such, never faked, and code no scanner analyzed gets no score. |
 | 🛡️ **Vulnerabilities** | Filter by severity, status, type, scanner, repository, date and text. The detail page shows intel, code, references, investigation, remediation and verification history. |
 | 🤖 **AI investigations** | Agent timeline with tool calls and decisions, structured facts, model claims flagged as supported or unsupported by citations, confirmed findings vs hypotheses, and a deterministic risk score. |
 | 📚 **Vulnerability intel** | Look up any CVE/GHSA/PYSEC id, browse tracked vulnerabilities, sync the KEV catalog, use the RAG search playground, and add approved internal docs. |
@@ -107,52 +183,6 @@ frontend/   Next.js console (dashboard, findings, agents, intel, MCP, remediatio
 docs/       architecture diagrams (demo videos: frontend/public/demo, played at /demo)
 scripts/    tool install · local setup · dev runner
 ```
-
-## 🚀 Quick start
-
-### Local (no Docker)
-
-**Requirements:** Node 20+, `curl`, `git`, and [Ollama](https://ollama.com) with `qwen2.5-coder:7b` and `nomic-embed-text` pulled.
-
-```bash
-scripts/dev-setup.sh     # scanners + uv/Python 3.12 into ./.tools, backend venv, npm install, .env with fresh secrets
-scripts/dev.sh           # backend :8000 + frontend :3000
-```
-
-Open **http://localhost:3000** and sign in as `admin@trace.example` with the password from `DEMO_ADMIN_PASSWORD` (default `trace-admin`, local only). API docs are at **http://localhost:8000/docs**.
-
-On first start the backend:
-
-1. runs migrations;
-2. seeds the admin user, organization, built-in MCP server and evaluation datasets;
-3. connects `backend/tests/fixtures/vulnerable-app` as a **DEMO** repository and scans it with the real scanners. Demo findings are labeled everywhere and can be filtered out;
-4. ingests OWASP and CWE knowledge into the RAG index in the background.
-
-Then connect a model in **Settings → Integrations** (for example Ollama at `http://localhost:11434` with `qwen2.5-coder:7b`) and click **Save & verify**. In development the model settings in `.env` are used until you do, so AI features work right away. To try the production behaviour, where everything must be set up in the UI, start the backend with `INTEGRATIONS_ENV_FALLBACK=false`. See [Integrations](#integrations-from-the-ui).
-
-### Docker Compose
-
-```bash
-cp .env.example .env    # set SECRET_KEY / JWT_SECRET_KEY
-docker compose up -d --build
-docker compose exec ollama ollama pull qwen2.5-coder:7b
-docker compose exec ollama ollama pull nomic-embed-text
-```
-
-Then connect the model in **Settings → Integrations**. Inside Compose, Ollama's base URL is `http://ollama:11434`.
-
-Compose runs PostgreSQL, Redis + an RQ worker, a Qdrant server, Ollama, the API and the frontend. Containers drop all capabilities, use `no-new-privileges` and run as a non-root user, and the worker has CPU and memory limits.
-
-### Production (Vercel + Render)
-
-The Next.js frontend runs on **Vercel**. The API runs on **Render**, because scans, cloning and long agent jobs need a container with a disk, which Vercel functions do not provide.
-
-1. **Backend:** in Render, choose **New → Blueprint** and pick this repository. [`render.yaml`](render.yaml) creates the `trace-api` Docker service (from `backend/Dockerfile`) and a PostgreSQL 16 database. When prompted, set `DEMO_ADMIN_PASSWORD` to a strong password (12+ characters). In production the default password is refused and seeding is skipped.
-2. **Frontend:** a Vercel project with **Root Directory** `frontend`, connected to this repository. Set `NEXT_PUBLIC_API_URL` to the Render service URL. Pushes to `main` deploy to production; other branches get preview URLs.
-3. **CORS:** `CORS_ORIGINS` and `CORS_ORIGIN_REGEX` in `render.yaml` allow the Vercel production domain (`https://trace-psi-gules.vercel.app`) and its preview deployments.
-4. Sign in and connect a model provider (Anthropic, an OpenAI-compatible API, or an Ollama server reachable from Render) and GitHub in **Settings → Integrations**. The env fallback is off in production.
-
-The Blueprint uses Render's free plans, which run the public demo: visitors browse the seeded demo scan read-only, the API sleeps after 15 minutes idle (the login page wakes it), and the free database is deleted after 30 days (switch `trace-db` to `basic-256mb` to keep it). Scanning real repositories with Semgrep and Trivy needs the Standard plan (2 GB) or more.
 
 ## ⚙️ Configuration
 
@@ -215,6 +245,23 @@ The end-to-end test runs a real scan, checks that the investigation is blocked u
 
 See [docs/STATUS.md](docs/STATUS.md) for what has been verified, what still depends on credentials, and known limitations.
 
+## ❓ FAQ and limits
+
+**Does TRACE change my code?** Not without you. Every fix needs a human approval, is verified on an isolated copy of the repository, and is opened as a pull request. Nothing is ever merged automatically.
+
+**Does my code leave my machine?** TRACE is self-hosted. With Ollama, scans and AI investigations run entirely on your hardware. Repository code is never sent to a hosted model unless you switch that on (`ALLOW_SOURCE_TO_HOSTED_LLM`, or per organization in the model integration).
+
+**Which AI models does it use?** Any local model through Ollama, any OpenAI-compatible endpoint (vLLM, OpenAI and others), or Anthropic, chosen per organization in **Settings → Integrations**.
+
+**What can't it do yet?** Honest limits, found by testing TRACE on real code:
+
+- **Deep logic bugs.** Scanner rules describe known patterns. A protocol state bug, such as a missing parameter check in the Linux Bluetooth L2CAP code, needs a human reviewer or a fuzzer.
+- **Dependencies without a lockfile.** Trivy and OSV-Scanner need exact versions. A repo with only `package.json` currently shows 0 dependency findings, with no warning that versions could not be checked. Flagging this is next on the roadmap.
+- **Small local models.** On a CPU-only laptop a 7B model takes minutes per step and tends to return guidance rather than a patch. A larger or hosted model gives faster, more complete results.
+- **AI verdicts need review.** An investigation can still agree with a false positive. That is why every fix waits for a human decision.
+
+TRACE is alpha software. See [docs/STATUS.md](docs/STATUS.md) for what has been verified.
+
 ## 🤝 Contributing, security and license
 
 - **Contributing:** see [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -222,5 +269,5 @@ See [docs/STATUS.md](docs/STATUS.md) for what has been verified, what still depe
 - **License:** [MIT](LICENSE).
 
 <div align="center">
-<sub>Built by <a href="https://github.com/atique-ahmad-01">Atique Ahmad</a></sub>
+<sub>Built by <a href="https://github.com/atique-ahmad-01">Atique Ahmad</a> · if TRACE is useful to you, a ⭐ helps others find it</sub>
 </div>
