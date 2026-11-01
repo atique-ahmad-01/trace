@@ -17,6 +17,7 @@ import {
   Wrench,
 } from 'lucide-react'
 import { Logo, SUBTITLE, TAGLINE, Wordmark } from '@/components/brand'
+import { ProjectLinksList } from '@/components/project-links'
 import { cn } from '@/lib/utils'
 
 const sections = [
@@ -81,6 +82,10 @@ export function Sidebar() {
             </div>
           </div>
         ))}
+        <div>
+          <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Open source</p>
+          <ProjectLinksList />
+        </div>
       </nav>
       <div className="border-t px-5 py-3 leading-snug">
         <p className="text-[11px] font-medium">{TAGLINE}</p>
