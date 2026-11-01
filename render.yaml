@@ -5,15 +5,6 @@
 # Model providers, GitHub tokens and Langfuse are not configured here: each organization
 # connects them in Settings -> Integrations (env fallback is off in production).
 
-databases:
-  - name: trace-db
-    # Free Postgres (1 GB) is deleted by Render 30 days after creation; switch to basic-256mb to keep it.
-    plan: free
-    region: singapore
-    databaseName: trace
-    user: trace
-    postgresMajorVersion: "16"
-
 services:
   - type: web
     name: trace-api
@@ -24,20 +15,23 @@ services:
     # scan read-only. Real-repository scans (Semgrep, Trivy) need Standard (2 GB) or more.
     plan: free
     region: singapore
-    branch: main
+    branch: feature/vercel-api
     autoDeploy: true
     healthCheckPath: /health
     envVars:
       - key: ENVIRONMENT
         value: production
+      # Shared Neon Postgres (same DATABASE_URL as the Vercel project); migrations run at startup.
       - key: DATABASE_URL
-        fromDatabase:
-          name: trace-db
-          property: connectionString
+        sync: false
+      # Same values as on Vercel, so sessions and stored credentials stay valid.
       - key: SECRET_KEY
-        generateValue: true
+        sync: false
       - key: JWT_SECRET_KEY
-        generateValue: true
+        sync: false
+      # Link in verification emails. Add SMTP_HOST/SMTP_USERNAME/SMTP_PASSWORD/SMTP_FROM to send them.
+      - key: FRONTEND_URL
+        value: https://trace-psi-gules.vercel.app
       # Frontend origins: the Vercel production domains, plus its preview deployments.
       - key: CORS_ORIGINS
         value: https://trace-psi-gules.vercel.app,https://trace-atique-ahmad-chs-projects.vercel.app
