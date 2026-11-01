@@ -6,20 +6,12 @@ import { ArrowRight, Check, Copy, Github, Minus, Play, ShieldCheck } from 'lucid
 import { AcronymTags, Headline, Logo, Wordmark } from '@/components/brand'
 import { ExternalLink, LOCAL_SETUP_URL, REPO_URL } from '@/components/project-links'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { cn } from '@/lib/utils'
 
-const VIDEOS = [
-  {
-    id: 'full',
-    label: 'Product demo',
-    length: '2 min',
-    src: '/demo/trace-demo.mp4',
-    description:
-      'Narrated walkthrough of the real product: connecting a model provider and GitHub, a scan with four scanners, live vulnerability intelligence, an AI investigation with cited evidence, and a human-approved fix verified by re-scanning.',
-  },
-  { id: 'short', label: 'Quick cut', length: '30 sec', src: '/demo/trace-demo-30s.mp4', description: 'The whole flow from scan to verified fix in thirty seconds.' },
-  { id: 'arch', label: 'Architecture', length: 'animation', src: '/demo/trace-architecture.mp4', description: 'How scanners, vulnerability intelligence, AI agents and remediation fit together.' },
-]
+const VIDEO = {
+  src: '/demo/trace-demo.mp4',
+  description:
+    'Narrated walkthrough of the real product: connecting a model provider and GitHub, a scan with four scanners, live vulnerability intelligence, an AI investigation with cited evidence, and a human-approved fix verified by re-scanning.',
+}
 
 // A real scan of OWASP Juice Shop (an intentionally vulnerable app) at commit 717f5ef, run on a laptop with TRACE.
 const SCANNERS = [
@@ -145,9 +137,6 @@ function ScanPanel() {
 }
 
 export default function DemoPage() {
-  const [active, setActive] = useState(VIDEOS[0].id)
-  const video = VIDEOS.find((v) => v.id === active) ?? VIDEOS[0]
-
   return (
     <div className="min-h-screen overflow-x-hidden bg-background">
       <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur">
@@ -227,36 +216,19 @@ export default function DemoPage() {
           </div>
         </section>
 
-        {/* Demo videos */}
+        {/* Demo video */}
         <section id="demo" className="scroll-mt-16 border-t py-16">
           <div className="mx-auto max-w-5xl px-4">
             <SectionTitle eyebrow="Demo" title="See the whole flow in two minutes">
               Every screen and number in the video comes from a real run.
             </SectionTitle>
-            <div role="tablist" aria-label="Demo videos" className="mb-4 flex flex-wrap justify-center gap-2">
-              {VIDEOS.map((v) => (
-                <button
-                  key={v.id}
-                  role="tab"
-                  aria-selected={v.id === active}
-                  onClick={() => setActive(v.id)}
-                  className={cn(
-                    'rounded-full border px-3.5 py-1.5 text-xs transition-colors',
-                    v.id === active ? 'border-primary bg-primary/10 font-medium text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                  )}
-                >
-                  {v.label} <span className="opacity-70">· {v.length}</span>
-                </button>
-              ))}
-            </div>
             <div className="overflow-hidden rounded-lg border bg-black shadow-sm">
-              {/* key remounts the element so switching tabs loads the new source */}
-              <video key={video.src} className="aspect-video w-full" controls playsInline preload="metadata" poster="/demo/thumbnail.png">
-                <source src={video.src} type="video/mp4" />
-                Your browser cannot play this video. <a href={video.src}>Download it</a> instead.
+              <video className="aspect-video w-full" controls playsInline preload="metadata" poster="/demo/thumbnail.png">
+                <source src={VIDEO.src} type="video/mp4" />
+                Your browser cannot play this video. <a href={VIDEO.src}>Download it</a> instead.
               </video>
             </div>
-            <p className="mx-auto mt-4 max-w-3xl text-center text-sm text-muted-foreground">{video.description}</p>
+            <p className="mx-auto mt-4 max-w-3xl text-center text-sm text-muted-foreground">{VIDEO.description}</p>
           </div>
         </section>
 

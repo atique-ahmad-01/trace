@@ -180,7 +180,7 @@ The full set of diagrams is in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**:
 ```text
 backend/    FastAPI API · scanners · intel · RAG · LangGraph agents · MCP · evals · tests
 frontend/   Next.js console (dashboard, findings, agents, intel, MCP, remediation, evals, reports)
-docs/       architecture diagrams (demo videos: frontend/public/demo, played at /demo)
+docs/       architecture diagrams (demo video: frontend/public/demo, played at /demo)
 scripts/    tool install · local setup · dev runner
 ```
 
