@@ -16,7 +16,7 @@ Open-source, self-hosted AI security for your repositories: real scanners, AI in
 ![Next.js 14](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
 ![LangGraph](https://img.shields.io/badge/LangGraph-agents-1C3C3C)
 
-**[🌐 Website & demo](https://trace-psi-gules.vercel.app/demo)** · [Real result](#-see-it-on-a-real-app) · [How it works](#%EF%B8%8F-how-it-works) · [Quick start](#-quick-start) · [FAQ](#-faq-and-limits) · [Features](#-features) · [Architecture](#-architecture) · [Security model](#-security-model)
+**[🌐 Website](https://trace-psi.me)** · **[▶ Demo](https://trace-psi.me/demo)** · [Real result](#-see-it-on-a-real-app) · [How it works](#%EF%B8%8F-how-it-works) · [Quick start](#-quick-start) · [FAQ](#-faq-and-limits) · [Features](#-features) · [Architecture](#-architecture) · [Security model](#-security-model)
 
 </div>
 
@@ -25,11 +25,11 @@ Open-source, self-hosted AI security for your repositories: real scanners, AI in
 Security scanners are good at producing alerts and bad at telling you which ones matter. TRACE runs the scanners you already trust (Trivy, OSV-Scanner, Semgrep, Gitleaks), merges their results into one deduplicated list, and enriches every finding with vulnerability intelligence from NVD, OSV, GitHub advisories and CISA KEV. LangGraph agents then read the code and explain each finding with cited evidence. When a fix is proposed, nothing changes until **you approve it**, and TRACE re-scans a patched copy before it opens a pull request.
 
 <p align="center">
-  <a href="https://trace-psi-gules.vercel.app/demo">
+  <a href="https://trace-psi.me/demo">
     <img src="frontend/public/demo/thumbnail.png" alt="Watch the TRACE product demo (2 min)" width="900" />
   </a>
   <br />
-  <sub><b><a href="https://trace-psi-gules.vercel.app/demo">▶ Watch the 2-minute demo</a></b> · every screen and number comes from a real run</sub>
+  <sub><b><a href="https://trace-psi.me/demo">▶ Watch the 2-minute demo</a></b> · every screen and number comes from a real run</sub>
 </p>
 
 ## 🔎 See it on a real app
@@ -115,7 +115,7 @@ The Next.js frontend runs on **Vercel**. The API runs on **Render**, because sca
 
 1. **Backend:** in Render, choose **New → Blueprint** and pick this repository. [`render.yaml`](render.yaml) creates the `trace-api` Docker service (from `backend/Dockerfile`) and a PostgreSQL 16 database. When prompted, set `DEMO_ADMIN_PASSWORD` to a strong password (12+ characters). In production the default password is refused and seeding is skipped.
 2. **Frontend:** a Vercel project with **Root Directory** `frontend`, connected to this repository. Set `NEXT_PUBLIC_API_URL` to the Render service URL. Pushes to `main` deploy to production; other branches get preview URLs.
-3. **CORS:** `CORS_ORIGINS` and `CORS_ORIGIN_REGEX` in `render.yaml` allow the Vercel production domain (`https://trace-psi-gules.vercel.app`) and its preview deployments.
+3. **CORS:** `CORS_ORIGINS` and `CORS_ORIGIN_REGEX` in `render.yaml` allow the production domain (`https://trace-psi.me`, plus `www`) and the Vercel preview deployments.
 4. Sign in and connect a model provider (Anthropic, an OpenAI-compatible API, or an Ollama server reachable from Render) and GitHub in **Settings → Integrations**. The env fallback is off in production.
 
 The Blueprint uses Render's free plans, which run the public demo: visitors browse the seeded demo scan read-only, the API sleeps after 15 minutes idle (the login page wakes it), and the free database is deleted after 30 days (switch `trace-db` to `basic-256mb` to keep it). Scanning real repositories with Semgrep and Trivy needs the Standard plan (2 GB) or more.
