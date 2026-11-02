@@ -96,7 +96,7 @@ export default function ScansPage() {
                       </span>
                     </Td>
                     <Td className="text-xs text-muted-foreground">{(s.ecosystems || []).join(', ') || '—'}</Td>
-                    <Td className="text-xs" title={formatDate(s.created_at)}>{ago(s.created_at)}</Td>
+                    <Td className="whitespace-nowrap text-xs" title={formatDate(s.created_at)}>{ago(s.created_at)}</Td>
                     <Td className="tabular text-xs">{s.started_at && s.completed_at ? `${Math.round((+new Date(s.completed_at) - +new Date(s.started_at)) / 1000)}s` : '—'}</Td>
                   </Tr>
                 ))}

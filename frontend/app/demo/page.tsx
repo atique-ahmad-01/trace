@@ -207,9 +207,6 @@ export default function DemoPage() {
                   <a href="#demo" className="m-btn bg-m-teal text-[#0b1f1d]">
                     <Play className="h-4 w-4 fill-current" /> Watch the 90-second demo
                   </a>
-                  <ExternalLink href={REPO_URL} className="m-btn bg-m-card">
-                    <Github className="h-4 w-4" /> Star on GitHub
-                  </ExternalLink>
                 </div>
               </div>
               <div className="m-rise" style={{ ['--d' as string]: '420ms' }}>
@@ -449,9 +446,6 @@ export default function DemoPage() {
               <Link href={signedIn ? '/overview' : '/login'} className="m-btn bg-m-teal text-[#0b1f1d]">
                 {signedIn ? 'Open dashboard' : 'Try the hosted demo'} <ArrowRight className="h-4 w-4" />
               </Link>
-              <ExternalLink href={REPO_URL} className="m-btn bg-m-card">
-                <Github className="h-4 w-4" /> github.com/atique-ahmad-01/trace
-              </ExternalLink>
             </div>
           </Reveal>
         </section>
