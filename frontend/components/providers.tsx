@@ -11,14 +11,18 @@ const AuthContext = createContext<{ me: Me | null; orgId: string | null; role: s
 
 export const useAuth = () => useContext(AuthContext)
 
+/** Pages that render without the app shell and without signing in: the landing page (also at /demo), login, email verification. */
+export const isPublicPath = (pathname: string) =>
+  pathname === '/' || pathname.startsWith('/demo') || pathname.startsWith('/login') || pathname.startsWith('/verify-email')
+
 function AuthGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const isPublic = pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/demo')
+  const isPublic = isPublicPath(pathname)
   const [ready, setReady] = useState(false)
   useEffect(() => {
-    // Logged-out visitors opening the site land on the public demo; deep links ask them to sign in.
-    if (!isPublic && !session.token()) router.replace(pathname === '/' ? '/demo' : '/login')
+    // The home page is the public landing page; app pages ask logged-out visitors to sign in.
+    if (!isPublic && !session.token()) router.replace('/login')
     setReady(true)
   }, [isPublic, pathname, router])
 
@@ -33,7 +37,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     session.setOrg(null)
     window.location.href = '/login'
   }
-  if (!ready) return null
+  // Public pages (landing, login) render immediately so they paint without waiting for the auth check.
+  if (!ready && !isPublic) return null
   return <AuthContext.Provider value={{ me: me ?? null, orgId, role, logout }}>{children}</AuthContext.Provider>
 }
 

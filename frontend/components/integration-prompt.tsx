@@ -16,7 +16,7 @@ export function IntegrationPrompt() {
   const { role } = useAuth()
   const isAdmin = role === 'admin' || role === 'owner'
   const [req, setReq] = useState<IntegrationRequired | null>(null)
-  const [returnTo, setReturnTo] = useState('/')
+  const [returnTo, setReturnTo] = useState('/overview')
   const items = useIntegrations().data
 
   useEffect(() => {
