@@ -12,7 +12,7 @@ short_description: API for TRACE, AI-powered security and compliance intelligenc
 # TRACE API
 
 Backend for [TRACE](https://github.com/atique-ahmad-01/trace). The web app runs at
-https://trace-psi-gules.vercel.app.
+https://trace-psi.me.
 
 This Space builds the `backend/` folder of the GitHub repository (see `Dockerfile`).
 Health check: `/health` · API docs: `/docs`.
