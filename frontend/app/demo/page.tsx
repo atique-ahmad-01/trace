@@ -10,7 +10,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 const VIDEO = {
   src: '/demo/trace-demo.mp4',
   description:
-    'Narrated walkthrough of the real product: connecting a model provider and GitHub, a scan with four scanners, live vulnerability intelligence, an AI investigation with cited evidence, and a human-approved fix verified by re-scanning.',
+    'A 90-second narrated tour: four scanners merged into one deduplicated list, live vulnerability intelligence, a real AI investigation with cited evidence, a deterministic risk score, and a human-approved fix verified by re-scanning.',
 }
 
 // A real scan of OWASP Juice Shop (an intentionally vulnerable app) at commit 717f5ef, run on a laptop with TRACE.
@@ -219,7 +219,7 @@ export default function DemoPage() {
         {/* Demo video */}
         <section id="demo" className="scroll-mt-16 border-t py-16">
           <div className="mx-auto max-w-5xl px-4">
-            <SectionTitle eyebrow="Demo" title="See the whole flow in two minutes">
+            <SectionTitle eyebrow="Demo" title="See the whole flow in 90 seconds">
               Every screen and number in the video comes from a real run.
             </SectionTitle>
             <div className="overflow-hidden rounded-lg border bg-black shadow-sm">

@@ -145,7 +145,7 @@ export default function LoginPage() {
           <AcronymList className="mt-10" />
           <div className="mt-10 flex flex-wrap gap-3">
             <Link href="/demo#demo" className="inline-flex h-10 items-center gap-2 rounded-md border bg-background/60 px-4 text-sm font-medium hover:bg-accent">
-              <PlayCircle className="h-4 w-4 text-primary" /> Watch the 2-minute demo
+              <PlayCircle className="h-4 w-4 text-primary" /> Watch the 90-second demo
             </Link>
             <ExternalLink href={REPO_URL} className="inline-flex h-10 items-center gap-2 rounded-md border bg-background/60 px-4 text-sm font-medium hover:bg-accent">
               <Github className="h-4 w-4" /> Star on GitHub

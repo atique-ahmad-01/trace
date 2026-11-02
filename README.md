@@ -26,10 +26,10 @@ Security scanners are good at producing alerts and bad at telling you which ones
 
 <p align="center">
   <a href="https://trace-psi.me/demo">
-    <img src="frontend/public/demo/thumbnail.png" alt="Watch the TRACE product demo (2 min)" width="900" />
+    <img src="frontend/public/demo/thumbnail.png" alt="Watch the TRACE product demo (90 seconds)" width="900" />
   </a>
   <br />
-  <sub><b><a href="https://trace-psi.me/demo">▶ Watch the 2-minute demo</a></b> · every screen and number comes from a real run</sub>
+  <sub><b><a href="https://trace-psi.me/demo">▶ Watch the 90-second demo</a></b> · the product screens come from a real run</sub>
 </p>
 
 ## 🔎 See it on a real app
