@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Github, Play } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Play } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { ACRONYM, Logo, Wordmark } from '@/components/brand'
 import { DoodleField, HighlightBar } from '@/components/marketing'
-import { ExternalLink, ProjectLinksRow, REPO_URL } from '@/components/project-links'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button, ErrorState, Input, Label, Notice } from '@/components/ui'
 import { API_URL, ApiError, api, login, session } from '@/lib/api'
@@ -175,9 +174,6 @@ export default function LoginPage() {
               <span className="mt-0.5 block text-xs text-[#a9c9c2]">Scan, investigation, approved fix, verified.</span>
             </span>
           </Link>
-          <ExternalLink href={REPO_URL} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#cfe9e3] hover:text-m-teal">
-            <Github className="h-4 w-4" /> Star on GitHub
-          </ExternalLink>
         </div>
       </section>
       <div className="relative flex items-center justify-center overflow-hidden px-4 py-16">
@@ -262,7 +258,6 @@ export default function LoginPage() {
           <p className="mt-4 text-center text-[11px] text-muted-foreground">New accounts get read-only access to the TRACE Demo organization with real scan results.</p>
         )}
         {IS_LOCAL_API && <p className="mt-4 text-center text-[11px] text-muted-foreground">Local demo admin: admin@trace.example (password from DEMO_ADMIN_PASSWORD)</p>}
-        <ProjectLinksRow className="mt-6" />
         </div>
       </div>
     </div>

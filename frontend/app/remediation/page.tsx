@@ -32,7 +32,7 @@ export default function RemediationPage() {
                     <Td><Badge>{titleCase(p.remediation_type)}{p.has_patch ? ' · patch' : ''}</Badge></Td>
                     <Td>{p.evidence_sufficient ? <Badge tone="success">sufficient</Badge> : <Badge tone="warning">insufficient</Badge>}</Td>
                     <Td><StatusBadge status={p.status} /></Td>
-                    <Td className="text-xs text-muted-foreground">{ago(p.created_at)}</Td>
+                    <Td className="whitespace-nowrap text-xs text-muted-foreground">{ago(p.created_at)}</Td>
                   </Tr>
                 ))}
               </tbody>

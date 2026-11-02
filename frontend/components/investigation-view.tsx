@@ -59,7 +59,7 @@ export function Timeline({ events }: { events: any[] }) {
                   <span className="font-medium">{titleCase(e.agent_name)}</span> <span className="text-muted-foreground">· {e.event_type.replace('_', ' ')}</span>
                   {e.duration_ms ? <span className="text-muted-foreground"> · {(e.duration_ms / 1000).toFixed(1)}s</span> : null}
                 </p>
-                <p className={cn('text-sm', isErr && 'text-destructive')}>{e.message}</p>
+                <p className={cn('break-words text-sm', isErr && 'text-destructive', open !== i && 'line-clamp-2')}>{e.message}</p>
               </button>
               {open === i && e.data && Object.keys(e.data).length > 0 && (
                 <pre className="scrollbar-thin mt-1.5 max-h-64 overflow-auto rounded border bg-background p-2 font-mono text-[11px]">{JSON.stringify(e.data, null, 2)}</pre>

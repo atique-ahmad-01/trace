@@ -89,13 +89,13 @@ export default function InvestigationsPage() {
                     </Td>
                     <Td className="text-xs">{i.repository_name}</Td>
                     <Td className="text-xs">{titleCase(i.mode)}</Td>
-                    <Td className="font-mono text-xs">{i.model}</Td>
+                    <Td className="max-w-[220px] truncate font-mono text-xs" title={i.model}>{i.model}</Td>
                     <Td className="font-mono text-xs">{i.priority || '—'}</Td>
                     <Td>
                       <StatusBadge status={i.status} />
                     </Td>
                     <Td className="tabular text-xs">{i.tokens_in + i.tokens_out || '—'}</Td>
-                    <Td className="text-xs text-muted-foreground">{ago(i.created_at)}</Td>
+                    <Td className="whitespace-nowrap text-xs text-muted-foreground">{ago(i.created_at)}</Td>
                   </Tr>
                 ))}
               </tbody>

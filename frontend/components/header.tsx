@@ -1,10 +1,9 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { Github, LogOut, Search } from 'lucide-react'
+import { LogOut, Search } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { ExternalLink, REPO_URL } from '@/components/project-links'
 import { useAuth } from '@/components/providers'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { api, session } from '@/lib/api'
@@ -52,12 +51,7 @@ export function Header() {
             <ServiceDot ok={status.rag.vectors > 0} label={`RAG ${status.rag.documents} docs`} detail={`${status.rag.vectors} vectors (${status.rag.vector_store})`} />
           </div>
         )}
-        <div className="flex items-center gap-1">
-          <ThemeToggle className="border-0" />
-          <ExternalLink href={REPO_URL} title="TRACE on GitHub" className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground">
-            <Github className="h-4 w-4" aria-label="TRACE on GitHub" />
-          </ExternalLink>
-        </div>
+        <ThemeToggle className="border-0" />
         <div className="flex items-center gap-3 border-l pl-4">
           <div className="hidden text-right leading-tight sm:block">
             <p className="max-w-[220px] truncate whitespace-nowrap text-xs font-medium">{me?.user.full_name || me?.user.email}</p>

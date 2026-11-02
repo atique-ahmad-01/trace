@@ -10,15 +10,13 @@ import {
   FileText,
   FolderGit2,
   LayoutDashboard,
-  PlayCircle,
   Plug,
   ScanSearch,
   Settings,
   ShieldCheck,
   Wrench,
 } from 'lucide-react'
-import { Logo, SUBTITLE, TAGLINE, Wordmark } from '@/components/brand'
-import { ProjectLinksList } from '@/components/project-links'
+import { Logo, Wordmark } from '@/components/brand'
 import { cn } from '@/lib/utils'
 
 const sections = [
@@ -71,8 +69,10 @@ export function Sidebar() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors',
-                      active ? 'bg-primary/10 font-medium text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                      'relative flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors',
+                      active
+                        ? 'bg-primary/10 font-medium text-primary before:absolute before:-left-3 before:top-1.5 before:h-5 before:w-[3px] before:rounded-r before:bg-primary'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                     )}
                   >
                     <item.icon className="h-4 w-4" />
@@ -83,19 +83,7 @@ export function Sidebar() {
             </div>
           </div>
         ))}
-        <div>
-          <p className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Open source</p>
-          <Link href="/#demo" className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
-            <PlayCircle className="h-4 w-4" />
-            Demo video
-          </Link>
-          <ProjectLinksList />
-        </div>
       </nav>
-      <div className="border-t px-5 py-3 leading-snug">
-        <p className="text-[11px] font-medium">{TAGLINE}</p>
-        <p className="text-[10px] text-muted-foreground">{SUBTITLE}</p>
-      </div>
     </aside>
   )
 }
