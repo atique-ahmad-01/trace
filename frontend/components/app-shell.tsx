@@ -1,13 +1,14 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import { isPublicPath } from '@/components/providers'
 import { Header } from '@/components/header'
 import { IntegrationBanner, IntegrationPrompt } from '@/components/integration-prompt'
 import { Sidebar } from '@/components/sidebar'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  if (pathname.startsWith('/login') || pathname.startsWith('/verify-email') || pathname.startsWith('/demo')) return <>{children}</>
+  if (isPublicPath(pathname)) return <>{children}</>
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />

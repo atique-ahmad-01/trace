@@ -68,3 +68,61 @@
   .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
   .scrollbar-thin::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 4px; }
 }
+
+/* ---- Marketing pages (landing + login): the demo video's look. Colors are RGB channels for Tailwind's m-* palette. */
+:root {
+  --m-paper: 251 253 252;
+  --m-card: 255 255 255;
+  --m-ink: 11 31 29;
+  --m-mint: 220 246 238;
+  --m-deep: 13 43 40;
+  --m-teal: 47 214 182;
+  --m-tealdeep: 23 166 140;
+  --m-muted: 95 125 120;
+  --m-shadow: 11 31 29;
+}
+.dark {
+  --m-paper: 9 26 24;
+  --m-card: 15 37 34;
+  --m-ink: 230 247 242;
+  --m-mint: 16 48 44;
+  --m-deep: 6 22 20;
+  --m-muted: 143 176 170;
+  --m-shadow: 47 214 182;
+}
+
+@layer components {
+  /* thick border + hard offset shadow, as on the video's cards */
+  .m-card { @apply rounded-2xl border-[3px] border-m-ink bg-m-card; box-shadow: 8px 9px 0 rgb(var(--m-shadow)); }
+  .m-card-sm { @apply rounded-xl border-2 border-m-ink bg-m-card; box-shadow: 5px 6px 0 rgb(var(--m-shadow)); }
+  .m-btn { @apply inline-flex h-12 items-center justify-center gap-2 rounded-xl border-[3px] border-m-ink px-6 font-display text-base font-extrabold text-m-ink transition-transform duration-150; box-shadow: 4px 5px 0 rgb(var(--m-shadow)); }
+  .m-btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 7px 0 rgb(var(--m-shadow)); }
+  .m-btn:active { transform: translate(2px, 3px); box-shadow: 1px 1px 0 rgb(var(--m-shadow)); }
+  .m-display { @apply font-display font-extrabold; letter-spacing: -0.035em; line-height: 0.98; }
+  .m-grid {
+    background-image: linear-gradient(rgb(255 255 255 / 0.07) 1.5px, transparent 1.5px), linear-gradient(90deg, rgb(255 255 255 / 0.07) 1.5px, transparent 1.5px);
+    background-size: 72px 72px;
+    animation: m-pan 24s linear infinite;
+  }
+  .m-slashes { background-image: repeating-linear-gradient(115deg, transparent 0 42px, rgb(13 43 40 / 0.12) 42px 46px); animation: m-slide 30s linear infinite; }
+  .m-float { animation: m-float var(--dur, 9s) ease-in-out var(--delay, 0s) infinite; }
+  /* scroll reveal hides content only once JS is known to run (html.m-js, set in <head>) */
+  .m-js .m-reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .m-js .m-reveal.m-in { opacity: 1; transform: none; }
+  /* above-the-fold entrance: pure CSS, plays on first paint */
+  .m-rise { animation: m-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) var(--d, 0ms) both; }
+  .m-marquee { animation: m-marquee 40s linear infinite; }
+}
+
+@keyframes m-rise { from { opacity: 0; transform: translateY(26px); } }
+@keyframes m-pan { to { background-position: 72px 43px; } }
+@keyframes m-slide { to { background-position: 460px 0; } }
+@keyframes m-marquee { to { transform: translateX(-50%); } }
+@keyframes m-float {
+  0%, 100% { transform: translate(0, 0) rotate(var(--r, 0deg)); }
+  50% { transform: translate(var(--dx, 10px), var(--dy, -14px)) rotate(calc(var(--r, 0deg) + 7deg)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .m-grid, .m-slashes, .m-float, .m-marquee, .m-rise { animation: none; }
+  .m-js .m-reveal { opacity: 1; transform: none; transition: none; }
+}

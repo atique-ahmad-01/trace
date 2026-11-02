@@ -7,8 +7,21 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui'],
         mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        display: ['var(--font-display)', 'var(--font-sans)', 'ui-sans-serif', 'system-ui'],
       },
       colors: {
+        // Marketing palette (landing + login), shared with the demo video. Values in app/globals.css.
+        m: {
+          paper: 'rgb(var(--m-paper) / <alpha-value>)',
+          ink: 'rgb(var(--m-ink) / <alpha-value>)',
+          mint: 'rgb(var(--m-mint) / <alpha-value>)',
+          deep: 'rgb(var(--m-deep) / <alpha-value>)',
+          teal: 'rgb(var(--m-teal) / <alpha-value>)',
+          tealdeep: 'rgb(var(--m-tealdeep) / <alpha-value>)',
+          muted: 'rgb(var(--m-muted) / <alpha-value>)',
+          shadow: 'rgb(var(--m-shadow) / <alpha-value>)',
+          card: 'rgb(var(--m-card) / <alpha-value>)',
+        },
         border: 'hsl(var(--border) / <alpha-value>)',
         input: 'hsl(var(--input) / <alpha-value>)',
         ring: 'hsl(var(--ring) / <alpha-value>)',

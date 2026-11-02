@@ -16,7 +16,7 @@ Open-source, self-hosted AI security for your repositories: real scanners, AI in
 ![Next.js 14](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
 ![LangGraph](https://img.shields.io/badge/LangGraph-agents-1C3C3C)
 
-**[🌐 Website](https://trace-psi.me)** · **[▶ Demo](https://trace-psi.me/demo)** · [Real result](#-see-it-on-a-real-app) · [How it works](#%EF%B8%8F-how-it-works) · [Quick start](#-quick-start) · [FAQ](#-faq-and-limits) · [Features](#-features) · [Architecture](#-architecture) · [Security model](#-security-model)
+**[🌐 Website](https://trace-psi.me)** · **[▶ Demo](https://trace-psi.me/#demo)** · [Real result](#-see-it-on-a-real-app) · [How it works](#%EF%B8%8F-how-it-works) · [Quick start](#-quick-start) · [FAQ](#-faq-and-limits) · [Features](#-features) · [Architecture](#-architecture) · [Security model](#-security-model)
 
 </div>
 
@@ -25,11 +25,11 @@ Open-source, self-hosted AI security for your repositories: real scanners, AI in
 Security scanners are good at producing alerts and bad at telling you which ones matter. TRACE runs the scanners you already trust (Trivy, OSV-Scanner, Semgrep, Gitleaks), merges their results into one deduplicated list, and enriches every finding with vulnerability intelligence from NVD, OSV, GitHub advisories and CISA KEV. LangGraph agents then read the code and explain each finding with cited evidence. When a fix is proposed, nothing changes until **you approve it**, and TRACE re-scans a patched copy before it opens a pull request.
 
 <p align="center">
-  <a href="https://trace-psi.me/demo">
-    <img src="frontend/public/demo/thumbnail.png" alt="Watch the TRACE product demo (2 min)" width="900" />
+  <a href="https://trace-psi.me/#demo">
+    <img src="frontend/public/demo/thumbnail.png" alt="Watch the TRACE product demo (90 seconds)" width="900" />
   </a>
   <br />
-  <sub><b><a href="https://trace-psi.me/demo">▶ Watch the 2-minute demo</a></b> · every screen and number comes from a real run</sub>
+  <sub><b><a href="https://trace-psi.me/#demo">▶ Watch the 90-second demo</a></b> · the product screens come from a real run</sub>
 </p>
 
 ## 🔎 See it on a real app
@@ -85,7 +85,7 @@ scripts/dev-setup.sh     # scanners + uv/Python 3.12 into ./.tools, backend venv
 scripts/dev.sh           # backend :8000 + frontend :3000
 ```
 
-Open **http://localhost:3000** and sign in as `admin@trace.example` with the password from `DEMO_ADMIN_PASSWORD` (default `trace-admin`, local only). API docs are at **http://localhost:8000/docs**.
+Open **http://localhost:3000** for the landing page, or go straight to **http://localhost:3000/login** and sign in as `admin@trace.example` with the password from `DEMO_ADMIN_PASSWORD` (default `trace-admin`, local only). You land on the dashboard at **/overview**. API docs are at **http://localhost:8000/docs**.
 
 On first start the backend:
 
@@ -179,8 +179,8 @@ The full set of diagrams is in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**:
 
 ```text
 backend/    FastAPI API · scanners · intel · RAG · LangGraph agents · MCP · evals · tests
-frontend/   Next.js console (dashboard, findings, agents, intel, MCP, remediation, evals, reports)
-docs/       architecture diagrams (demo video: frontend/public/demo, played at /demo)
+frontend/   Next.js app: landing page at / (also /demo), sign-in, and the console (dashboard at /overview, findings, agents, intel, MCP, remediation, evals, reports)
+docs/       architecture diagrams (demo video: frontend/public/demo, played on the home page)
 scripts/    tool install · local setup · dev runner
 ```
 

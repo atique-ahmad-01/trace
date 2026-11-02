@@ -1,12 +1,13 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
+import { Bricolage_Grotesque, Inter, JetBrains_Mono } from 'next/font/google'
 import { AppShell } from '@/components/app-shell'
 import { Providers } from '@/components/providers'
 import { THEME_BOOT_SCRIPT } from '@/lib/theme'
 
 const sans = Inter({ subsets: ['latin'], variable: '--font-sans' })
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
+const display = Bricolage_Grotesque({ subsets: ['latin'], weight: ['600', '800'], variable: '--font-display', adjustFontFallback: false })
 
 export const metadata: Metadata = {
   title: 'TRACE — Find real vulnerabilities. Fix them only with your approval.',
@@ -16,9 +17,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // The theme class is set by THEME_BOOT_SCRIPT before paint, so the server and client markup differ on <html>.
-    <html lang="en" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${sans.variable} ${mono.variable} ${display.variable}`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT + ";document.documentElement.classList.add('m-js')" }} />
       </head>
       <body className="font-sans">
         <Providers>

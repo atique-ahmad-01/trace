@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Github, PlayCircle, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Github, Play } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { AcronymList, Headline, Logo, Wordmark } from '@/components/brand'
+import { ACRONYM, Logo, Wordmark } from '@/components/brand'
+import { DoodleField, HighlightBar } from '@/components/marketing'
 import { ExternalLink, ProjectLinksRow, REPO_URL } from '@/components/project-links'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button, ErrorState, Input, Label, Notice } from '@/components/ui'
@@ -13,6 +14,16 @@ import { API_URL, ApiError, api, login, session } from '@/lib/api'
 const IS_LOCAL_API = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(API_URL)
 
 type ServerState = 'checking' | 'waking' | 'ready' | 'down'
+
+const PANEL_DOODLES = [
+  { kind: 'shield', top: '6%', left: '6%' }, { kind: 'bug', top: '82%', left: '8%', size: 46 }, { kind: 'search', top: '10%', left: '84%', size: 48 },
+  { kind: 'lock', top: '86%', left: '80%', size: 44 }, { kind: 'doc', top: '46%', left: '90%', size: 42 },
+] as const
+
+const FORM_DOODLES = [
+  { kind: 'doc', top: '12%', left: '8%', size: 44 }, { kind: 'check', top: '80%', left: '10%', size: 46 }, { kind: 'warn', top: '16%', left: '84%', size: 40 },
+  { kind: 'code', top: '78%', left: '82%', size: 44 },
+] as const
 
 /** Pings /health as soon as the page opens, so a sleeping backend boots while the visitor types. */
 function useServerWarmup(): ServerState {
@@ -99,7 +110,7 @@ export default function LoginPage() {
         return
       }
       await login(email, password)
-      router.replace('/')
+      router.replace('/overview')
     } catch (err) {
       if (err instanceof ApiError && (err.detail as any)?.code === 'email_not_verified') setUnverified(true)
       setError(err)
@@ -123,52 +134,71 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-screen bg-background lg:grid-cols-[1.1fr_1fr]">
-      <section className="relative hidden overflow-hidden border-r bg-surface lg:flex lg:flex-col lg:justify-center lg:px-16">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-60"
-          style={{ background: 'radial-gradient(600px circle at 15% 20%, hsl(186 85% 50% / 0.12), transparent 60%), radial-gradient(500px circle at 85% 85%, hsl(258 90% 66% / 0.12), transparent 60%)' }}
-          aria-hidden
-        />
-        <div className="relative max-w-lg">
-          <Link href="/demo" className="mb-10 flex w-fit items-center gap-3" title="Back to the TRACE website">
-            <Logo className="h-11 w-11" />
-            <Wordmark className="text-2xl" />
+    <div className="grid min-h-screen bg-m-paper text-m-ink lg:grid-cols-[1.1fr_1fr]">
+      <section className="m-grid relative hidden overflow-hidden border-r-[3px] border-m-ink bg-m-deep text-[#fbfdfc] lg:flex lg:flex-col lg:justify-center lg:px-14 xl:px-20">
+        <DoodleField spots={[...PANEL_DOODLES]} className="text-m-teal/30" />
+        <div className="relative max-w-xl">
+          <Link href="/" className="mb-10 flex w-fit items-center gap-3" title="Back to the TRACE website">
+            <Logo className="h-12 w-12" />
+            <span className="m-display -skew-x-6 text-4xl italic text-m-teal">TRACE</span>
           </Link>
-          <span className="inline-flex items-center gap-1.5 rounded-full border bg-background/60 px-3 py-1 text-xs text-muted-foreground">
-            <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Open source · self-hosted · MIT
+          <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-m-teal/60 px-3 py-1 font-mono text-xs font-semibold text-[#cfe9e3]">
+            <span className="h-2 w-2 rounded-full bg-m-teal" /> open source · self-hosted · MIT
           </span>
-          <Headline as="h2" className="mt-5 text-4xl leading-[1.1]" />
-          <p className="mt-4 text-sm text-muted-foreground">
+          <h2 className="m-display mt-6 text-5xl xl:text-6xl">Find real vulnerabilities.</h2>
+          <p className="m-display mt-4 text-3xl xl:text-4xl">
+            <HighlightBar className="py-0.5">Fix them only with your approval.</HighlightBar>
+          </p>
+          <p className="mt-7 max-w-md text-sm leading-relaxed text-[#a9c9c2]">
             Real scanners, AI investigations with cited evidence, and fixes verified by re-scanning before any pull request.
           </p>
-          <AcronymList className="mt-10" />
-          <div className="mt-10 flex flex-wrap gap-3">
-            <Link href="/demo#demo" className="inline-flex h-10 items-center gap-2 rounded-md border bg-background/60 px-4 text-sm font-medium hover:bg-accent">
-              <PlayCircle className="h-4 w-4 text-primary" /> Watch the 2-minute demo
-            </Link>
-            <ExternalLink href={REPO_URL} className="inline-flex h-10 items-center gap-2 rounded-md border bg-background/60 px-4 text-sm font-medium hover:bg-accent">
-              <Github className="h-4 w-4" /> Star on GitHub
-            </ExternalLink>
-          </div>
+          <ul className="mt-8 grid grid-cols-5 gap-2">
+            {ACRONYM.map((a) => (
+              <li key={a.letter} title={a.detail} className="rounded-xl border-2 border-m-teal/40 bg-[#123632] px-2 py-3 text-center">
+                <span className="m-display block text-3xl text-m-teal">{a.letter}</span>
+                <span className="mt-1 block font-mono text-[10px] text-[#a9c9c2]">{a.word}</span>
+              </li>
+            ))}
+          </ul>
+          <Link href="/#demo" className="group mt-8 flex items-center gap-4 rounded-2xl border-2 border-m-teal/50 bg-[#123632] p-3 transition-colors hover:border-m-teal">
+            <span className="relative block w-40 shrink-0 overflow-hidden rounded-lg border-2 border-[#05110f]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/demo/thumbnail.png" alt="" className="block aspect-video w-full object-cover" />
+              <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-m-teal text-[#0b1f1d] transition-transform group-hover:scale-110">
+                  <Play className="h-4 w-4 fill-current" />
+                </span>
+              </span>
+            </span>
+            <span>
+              <span className="m-display block text-xl">Watch the 90-second demo</span>
+              <span className="mt-0.5 block text-xs text-[#a9c9c2]">Scan, investigation, approved fix, verified.</span>
+            </span>
+          </Link>
+          <ExternalLink href={REPO_URL} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-[#cfe9e3] hover:text-m-teal">
+            <Github className="h-4 w-4" /> Star on GitHub
+          </ExternalLink>
         </div>
       </section>
-      <div className="relative flex items-center justify-center px-4 py-10">
-        <Link href="/demo" className="absolute left-4 top-4 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to website
+      <div className="relative flex items-center justify-center overflow-hidden px-4 py-16">
+        <DoodleField spots={[...FORM_DOODLES]} className="text-m-ink/10" />
+        <Link href="/" className="absolute left-4 top-4 z-10 inline-flex items-center gap-1.5 font-display text-sm font-bold text-m-ink/70 hover:text-m-ink">
+          <ArrowLeft className="h-4 w-4" /> Back to website
         </Link>
-        <ThemeToggle className="absolute right-4 top-3" />
-        <div className="w-full max-w-sm">
+        <ThemeToggle className="absolute right-4 top-3 z-10 border-2 border-m-ink text-m-ink" />
+        <div className="relative w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
           <Logo className="mb-3 h-14 w-14 lg:hidden" />
           <p className="lg:hidden"><Wordmark className="text-2xl" /></p>
-          <Headline as="h2" className="mt-4 text-xl leading-snug lg:hidden" />
-          <h1 className="mt-6 text-xl font-semibold tracking-tight lg:mt-0 lg:text-2xl">{mode === 'login' ? 'Sign in to TRACE' : 'Create your account'}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="m-display mt-3 text-lg lg:hidden">
+            Find real vulnerabilities. <span className="text-m-tealdeep">Fix them only with your approval.</span>
+          </p>
+          <h1 className="m-display mt-6 text-4xl lg:mt-0">{mode === 'login' ? 'Sign in.' : 'Create your account.'}</h1>
+          <p className="mt-2 text-sm text-m-muted">
             {mode === 'login' ? 'Welcome back. Your scans are waiting.' : 'Free and open source. Takes a minute.'}
           </p>
         </div>
-        <form onSubmit={submit} className="space-y-4 rounded-lg border bg-surface p-6 shadow-sm">
+        <form onSubmit={submit} className="m-card space-y-4 p-6 [&_input]:h-11 [&_input]:rounded-xl [&_input]:border-2 [&_input]:border-m-ink/70 [&_input]:bg-m-paper [&_input]:text-m-ink [&_input]:focus-visible:border-m-ink [&_input]:focus-visible:ring-m-teal [&_label]:font-mono [&_label]:font-bold [&_label]:uppercase [&_label]:tracking-wider [&_label]:text-m-muted">
           <div>
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -206,12 +236,12 @@ export default function LoginPage() {
               Resend verification email
             </Button>
           )}
-          <Button type="submit" className="w-full" loading={loading}>
-            {mode === 'login' ? 'Sign in' : 'Create account'}
+          <Button type="submit" className="m-btn h-12 w-full bg-m-teal text-[#0b1f1d] hover:bg-m-teal" loading={loading}>
+            {mode === 'login' ? 'Sign in' : 'Create account'} {!loading && <ArrowRight className="h-4 w-4" />}
           </Button>
-          <p className="text-center text-xs text-muted-foreground">
+          <p className="text-center text-sm text-m-muted">
             {mode === 'login' ? 'No account? ' : 'Have an account? '}
-            <button type="button" className="text-primary hover:underline" onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}>
+            <button type="button" className="font-display font-extrabold text-m-tealdeep hover:underline" onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}>
               {mode === 'login' ? 'Register' : 'Sign in'}
             </button>
           </p>
