@@ -31,10 +31,10 @@ services:
         sync: false
       # Link in verification emails. Add SMTP_HOST/SMTP_USERNAME/SMTP_PASSWORD/SMTP_FROM to send them.
       - key: FRONTEND_URL
-        value: https://trace-psi-gules.vercel.app
-      # Frontend origins: the Vercel production domains, plus its preview deployments.
+        value: https://trace-psi.me
+      # Frontend origins: the custom domain (trace-psi.me), the Vercel production domains, plus its preview deployments.
       - key: CORS_ORIGINS
-        value: https://trace-psi-gules.vercel.app,https://trace-atique-ahmad-chs-projects.vercel.app
+        value: https://trace-psi.me,https://www.trace-psi.me,https://trace-psi-gules.vercel.app,https://trace-atique-ahmad-chs-projects.vercel.app
       - key: CORS_ORIGIN_REGEX
         value: ^https://trace(-[a-z0-9-]+)?-atique-ahmad-chs-projects\.vercel\.app$
       # No Ollama on Render: retrieval runs keyword-only, and orgs connect a hosted model in the UI.
