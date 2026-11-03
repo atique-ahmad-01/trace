@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Play, Plug, Plus, RefreshCw } from 'lucide-react'
 import { useAuth } from '@/components/providers'
-import { Badge, Button, Card, CardBody, CardHeader, Checkbox, CodeBlock, EmptyState, ErrorState, Input, Label, Modal, Notice, PageHeader, Pagination, Select, Skeleton, StatusBadge, Switch, THead, Table, Td, Textarea, Th, Tr } from '@/components/ui'
+import { Badge, Button, Card, CardHeader, Checkbox, CodeBlock, EmptyState, ErrorState, Input, Label, Modal, Notice, PageHeader, Pagination, Select, Skeleton, StatusBadge, Switch, THead, Table, Td, Textarea, Th, Tr } from '@/components/ui'
 import { api, qs, type Paged } from '@/lib/api'
 import { ago } from '@/lib/utils'
 

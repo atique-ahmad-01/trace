@@ -1,0 +1,10 @@
+{$API_DOMAIN} {
+	encode gzip
+	# Long scans and agent runs stream logs; keep the upstream connection open.
+	reverse_proxy api:8000 {
+		flush_interval -1
+		transport http {
+			read_timeout 10m
+		}
+	}
+}

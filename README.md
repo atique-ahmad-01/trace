@@ -120,6 +120,10 @@ The Next.js frontend runs on **Vercel**. The API runs on **Render**, because sca
 
 The Blueprint uses Render's free plans, which run the public demo: visitors browse the seeded demo scan read-only, the API sleeps after 15 minutes idle (the login page wakes it), and the free database is deleted after 30 days (switch `trace-db` to `basic-256mb` to keep it). Scanning real repositories with Semgrep and Trivy needs the Standard plan (2 GB) or more.
 
+#### Free alternative: Oracle Cloud Always Free (full scans)
+
+To run real scans for free, deploy the API container on an Oracle Cloud Always Free Arm VM (2 OCPU / 12 GB). [`deploy/oracle`](deploy/oracle/README.md) contains the Compose file, a Caddy HTTPS proxy and a one-time VM setup script. Set the frontend's `NEXT_PUBLIC_API_URL` to the VM's domain.
+
 ## ✨ Features
 
 | Area | What it does |

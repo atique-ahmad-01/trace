@@ -11,7 +11,7 @@ import { RecentScans } from '@/components/dashboard/recent-scans'
 import { VulnerabilityTrends } from '@/components/dashboard/vulnerability-trends'
 import { Card, CardBody, CardHeader, EmptyState, ErrorState, LinkButton, Notice, PageHeader, Select, Skeleton, Stat, StatusBadge } from '@/components/ui'
 import { api, qs } from '@/lib/api'
-import { SEV_VAR, ago, fmtNum, titleCase } from '@/lib/utils'
+import { SEV_VAR, fmtNum, titleCase } from '@/lib/utils'
 
 const SCOPE_KEY = 'trace.dashboard.scope'
 
