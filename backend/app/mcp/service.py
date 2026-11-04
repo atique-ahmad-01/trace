@@ -67,7 +67,10 @@ def _server_env(root: Optional[str]) -> Dict[str, str]:
     import os
 
     env = {k: v for k, v in os.environ.items() if k in ("PATH", "HOME", "LANG", "SSL_CERT_FILE", "HTTPS_PROXY", "NO_PROXY")}
-    env.update({"TRACE_MCP_ROOT": root or settings.WORK_DIR, "TRACE_TOOLS_DIR": settings.TOOLS_DIR, "PYTHONPATH": str(BACKEND_DIR)})
+    # Pass the parent's import path: serverless hosts (Vercel) install dependencies outside the
+    # interpreter's site-packages, so the server process could not import them otherwise.
+    pythonpath = os.pathsep.join([str(BACKEND_DIR), *(p for p in sys.path if p and os.path.isdir(p))])
+    env.update({"TRACE_MCP_ROOT": root or settings.WORK_DIR, "TRACE_TOOLS_DIR": settings.TOOLS_DIR, "PYTHONPATH": pythonpath})
     return env
 
 
