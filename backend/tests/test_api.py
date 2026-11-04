@@ -6,7 +6,6 @@ import json
 import uuid
 
 import pytest
-from sqlalchemy import select
 
 from app.core import database
 from app.db.models import Finding, MCPTool, RemediationProposal, Repository

@@ -10,13 +10,11 @@ snapshots, patching and verification are real.
 """
 
 import json
-import uuid
 
 import pytest
 from sqlalchemy import select
 
-from app.core import database
-from app.db.models import AgentEvent, AgentInvestigation, Finding, RemediationProposal, VerificationRun, VulnerabilityRecord
+from app.db.models import VulnerabilityRecord
 from app.integrations import registry
 from app.llm.provider import BaseProvider, LLMResult
 

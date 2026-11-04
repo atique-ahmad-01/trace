@@ -16,8 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.graph import Toolbox, get_graph
 from app.core import database
-from app.core.config import settings
-from app.db.models import AgentEvent, AgentInvestigation, Finding, FindingStatus, RemediationProposal, Repository
+from app.db.models import AgentEvent, AgentInvestigation, Finding, RemediationProposal, Repository
 from app.intel import service as intel
 from app.integrations.registry import resolve_provider
 from app.mcp import service as mcp

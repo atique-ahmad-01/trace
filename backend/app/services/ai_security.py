@@ -14,7 +14,6 @@ tests did not demonstrate the risk.
 """
 
 import asyncio
-import json
 import os
 import re
 import secrets

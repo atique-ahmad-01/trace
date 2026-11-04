@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { UserPlus } from 'lucide-react'
 import { IntegrationsPanel } from '@/components/integrations-panel'
 import { useAuth } from '@/components/providers'
-import { Badge, Button, Card, CardBody, CardHeader, EmptyState, ErrorState, Input, KV, Label, Notice, PageHeader, Pagination, Select, Skeleton, StatusBadge, THead, Table, Tabs, Td, Th, Tr } from '@/components/ui'
+import { Badge, Button, Card, CardBody, CardHeader, EmptyState, ErrorState, Input, KV, PageHeader, Pagination, Select, Skeleton, StatusBadge, THead, Table, Tabs, Td, Th, Tr } from '@/components/ui'
 import { api, qs, type Paged } from '@/lib/api'
 import { ago } from '@/lib/utils'
 
