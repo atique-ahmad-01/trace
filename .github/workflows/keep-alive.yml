@@ -1,8 +1,7 @@
 name: Keep API warm
 
-# Pings the production API (Render, Vercel or the Oracle VM: set the API_URL variable) so a sleeping
-# instance is already up when a visitor opens the demo. GitHub runs scheduled jobs on a best-effort
-# basis (delays of a few minutes are normal).
+# Pings the production API so a sleeping Render instance is already up when a visitor opens the
+# demo. GitHub runs scheduled jobs on a best-effort basis (delays of a few minutes are normal).
 on:
   schedule:
     - cron: "*/10 * * * *"
