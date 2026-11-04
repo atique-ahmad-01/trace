@@ -30,6 +30,8 @@ jobs:
       - name: Check the queue
         id: queue
         run: |
+          # Not configured yet: skip quietly instead of failing every 5 minutes.
+          if [ -z "$REDIS_URL" ]; then echo "pending=0" >> "$GITHUB_OUTPUT"; exit 0; fi
           pip install --quiet redis==5.2.1
           n=$(python3 -c "import os, redis; print(redis.Redis.from_url(os.environ['REDIS_URL']).llen('rq:queue:trace'))")
           echo "pending=$n" >> "$GITHUB_OUTPUT"
