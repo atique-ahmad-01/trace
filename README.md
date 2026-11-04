@@ -120,10 +120,6 @@ The Next.js frontend runs on **Vercel**. The API runs on **Render**, because sca
 
 The Blueprint uses Render's free plans, which run the public demo: visitors browse the seeded demo scan read-only, the API sleeps after 15 minutes idle (the login page wakes it), and the free database is deleted after 30 days (switch `trace-db` to `basic-256mb` to keep it). Scanning real repositories with Semgrep and Trivy needs the Standard plan (2 GB) or more.
 
-#### Scans on the hosted API
-
-Vercel cannot run background jobs. With `REDIS_URL` set on the API, scans are queued in Redis and the [scan worker](.github/workflows/scan-worker.yml) runs them on GitHub Actions every 5 minutes. It needs the repository secrets `REDIS_URL`, `DATABASE_URL`, `SECRET_KEY` and `JWT_SECRET_KEY`.
-
 ## ✨ Features
 
 | Area | What it does |

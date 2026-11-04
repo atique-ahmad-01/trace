@@ -1,11 +1,7 @@
 name: Scan worker
 
-# Runs scans and other background jobs for the hosted API. Vercel cannot run background work, so
-# with REDIS_URL set the API queues jobs in Redis (RQ) and this workflow drains the queue every
-# 5 minutes using the backend image, which has all four scanners.
-#
-# Repository secrets: DATABASE_URL, SECRET_KEY, JWT_SECRET_KEY, REDIS_URL (same values as the
-# Vercel API project). Worker output is discarded because logs of a public repository are public.
+# Runs the scans the hosted API queues in Redis. Secrets: REDIS_URL, DATABASE_URL, SECRET_KEY,
+# JWT_SECRET_KEY. Output is discarded because the logs are public.
 
 on:
   schedule:
@@ -30,7 +26,6 @@ jobs:
       - name: Check the queue
         id: queue
         run: |
-          # Not configured yet: skip quietly instead of failing every 5 minutes.
           if [ -z "$REDIS_URL" ]; then echo "pending=0" >> "$GITHUB_OUTPUT"; exit 0; fi
           pip install --quiet redis==5.2.1
           n=$(python3 -c "import os, redis; print(redis.Redis.from_url(os.environ['REDIS_URL']).llen('rq:queue:trace'))")
